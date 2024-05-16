@@ -11,6 +11,7 @@ pandas = "^2.2.2"
 nba_api = "^1.4.1"
 pillow = "^10.3.0"
 requests = "^2.31.0"
+loguru = "^0.7.2"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.4.2"
