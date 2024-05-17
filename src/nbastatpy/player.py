@@ -14,10 +14,15 @@ from utils import Formatter
 
 
 class Player:
-    def __init__(self, player_name: str, season_year: str, playoffs=False):
-        self.name_meta = players.find_players_by_full_name(player_name)
+    def __init__(self, player: str, season_year: str = None, playoffs=False):
+        self.name_meta = players.find_player_by_id(player)
+        if self.name_meta:
+            self.name_meta = [self.name_meta]
+        else:
+            self.name_meta = players.find_players_by_full_name(player)
+
         if not self.name_meta:
-            raise ValueError(f"{player_name} not found")
+            raise ValueError(f"{player} not found")
         if len(self.name_meta) > 1:
             logger.warning(
                 f"Multiple players returned. Using: {self.name_meta[0]['full_name']}"
@@ -26,8 +31,11 @@ class Player:
         self.name = self.name_meta[0]["full_name"]
         self.is_active = self.name_meta[0]["is_active"]
 
-        self.season_year = season_year
-        self.season = Formatter.format_season(season_year)
+        if season_year:
+            self.season_year = season_year
+        else:
+            self.season_year = Formatter.get_current_season_year()
+        self.season = Formatter.format_season(self.season_year)
         self.season_type = "Regular Season"
         if playoffs:
             self.season_type = "Playoffs"
@@ -355,7 +363,7 @@ class Player:
 
 
 if __name__ == "__main__":
-    player_name = "Giannis"
+    player_name = "203507"
     player_seas = "2020"
     player = Player(player_name, player_seas)
     print(player.get_shot_chart())

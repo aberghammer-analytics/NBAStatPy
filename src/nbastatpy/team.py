@@ -1,13 +1,11 @@
-from datetime import date
 from io import BytesIO
 from typing import List
 
 import nba_api.stats.endpoints as nba
 import pandas as pd
 import requests
-from loguru import logger
-from nba_api.stats.endpoints import leaguegamefinder
-from nba_api.stats.static import players, teams
+from cairosvg import svg2png
+from nba_api.stats.static import teams
 from PIL import Image
 
 from utils import Formatter
@@ -29,6 +27,13 @@ class Team:
 
         for attr_name, value in self.info.items():
             setattr(self, attr_name.lower(), self.info.get(attr_name, None))
+
+    def get_logo(self):
+        pic_url = f"https://cdn.nba.com/logos/nba/{self.id}/primary/L/logo.svg"
+        pic = requests.get(pic_url)
+        pic = svg2png(bytestring=pic.content, write_to=None)
+        self.logo = Image.open(BytesIO(pic))
+        return self.logo
 
     def get_roster(self) -> List[pd.DataFrame]:
         self.roster = nba.CommonTeamRoster(

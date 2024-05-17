@@ -2,6 +2,22 @@ from datetime import datetime
 
 import pandas as pd
 
+PLAYTYPES = {
+    "TRANSITION": "Transition",
+    "ISOLATION": "Isolation",
+    "ISO": "Isolation",
+    "PRBALLHANDLER": "PRBallHandler",
+    "PRROLLMAN": "PRRollman",
+    "POSTUP": "Postup",
+    "SPOTUP": "Spotup",
+    "HANDOFF": "Handoff",
+    "CUT": "Cut",
+    "OFFSCREEN": "OffScreen",
+    "PUTBACKS": "OffRebound",
+    "OFFREBOUND": "OffRebound",
+    "MISC": "Misc",
+}
+
 
 class Formatter:
 
@@ -20,3 +36,14 @@ class Formatter:
 
     def combine_strings(row) -> str:
         return next(value for value in row if pd.notna(value))
+
+    def check_playtype(play: str, playtypes: dict = PLAYTYPES) -> str:
+        play = play.replace("_", "").replace("-", "").upper()
+
+        if play == "ALL":
+            return list(set(playtypes.values()))
+
+        if play not in set(playtypes.keys()):
+            raise ValueError(f"Playtype: {play} not found")
+
+        return playtypes[play]
