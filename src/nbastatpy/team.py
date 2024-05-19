@@ -58,6 +58,16 @@ class Team:
         ).drop(columns=drop_cols)
         return self.general_splits
 
+    def get_shooting_splits(self) -> pd.DataFrame:
+        self.shooting_splits = pd.concat(
+            nba.TeamDashboardByShootingSplits(
+                team_id=self.id,
+                season=self.season,
+                season_type_all_star=self.season_type,
+            ).get_data_frames()
+        )
+        return self.shooting_splits
+
     def get_leaders(self) -> pd.DataFrame:
         self.leaders = nba.FranchiseLeaders(team_id=self.id).get_data_frames()[0]
         return self.leaders
@@ -196,8 +206,24 @@ class Team:
 
         return self.player_matchups
 
+    def get_player_passes(self) -> pd.DataFrame:
+        self.player_passes = pd.concat(
+            nba.TeamDashPtPass(
+                team_id=self.id,
+                season=self.season,
+                season_type_all_star=self.season_type,
+            ).get_data_frames()
+        )
+
+        group_cols = ["PASS_FROM", "PASS_TO"]
+        self.player_passes["GROUP_SET"] = self.player_passes[group_cols].apply(
+            Formatter.combine_strings, axis=1
+        )
+        self.player_passes = self.player_passes.drop(columns=group_cols)
+        return self.player_passes
+
 
 if __name__ == "__main__":
     team_name = "MIL"
     team = Team(team_name, season_year="2020", playoffs=True)
-    print(team.get_general_splits())
+    print(team.get_player_passes())

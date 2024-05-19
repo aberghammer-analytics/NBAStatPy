@@ -18,6 +18,27 @@ PLAYTYPES = {
     "MISC": "Misc",
 }
 
+TRACKING_TYPES = {
+    "SPEEDDISTANCE": "SpeedDistance",
+    "SPEED": "SpeedDistance",
+    "DISTANCE": "SpeedDistance",
+    "POSSESSIONS": "Possessions",
+    "CATCHSHOOT": "CatchShoot",
+    "PULLUPSHOT": "PullUpShot",
+    "PULLUP": "PullUpShot",
+    "DEFENSE": "Defense",
+    "DRIVES": "Drives",
+    "DRIVE": "Drives",
+    "PASSING": "Passing",
+    "ELBOWTOUCH": "ElbowTouch",
+    "ELBOW": "ElbowTouch",
+    "POSTTOUCH": "PostTouch",
+    "POST": "PostTouch",
+    "PAINTTOUCH": "PaintTouch",
+    "PAINT": "PaintTouch",
+    "EFFICIENCY": "Efficiency",
+}
+
 
 class Formatter:
 
@@ -37,7 +58,11 @@ class Formatter:
     def combine_strings(row) -> str:
         return next(value for value in row if pd.notna(value))
 
-    def check_playtype(play: str, playtypes: dict = PLAYTYPES) -> str:
+    def check_playtype(
+        play: str, tracking: bool = False, playtypes: dict = PLAYTYPES
+    ) -> str:
+        if tracking:
+            playtypes = TRACKING_TYPES
         play = play.replace("_", "").replace("-", "").upper()
 
         if play == "ALL":

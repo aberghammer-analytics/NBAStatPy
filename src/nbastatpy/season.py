@@ -216,7 +216,73 @@ class Season:
 
         return self.synergy
 
+    def get_tracking_player(
+        self,
+        track_type: str = "Efficiency",
+    ) -> pd.DataFrame:
+        self.play_type = Formatter.check_playtype(track_type, tracking=True)
+
+        if isinstance(self.play_type, str):
+            self.tracking = nba.LeagueDashPtStats(
+                season=self.season,
+                per_mode_simple="PerGame",
+                pt_measure_type=self.play_type,
+                player_or_team="Player",
+                season_type_all_star=self.season_type,
+            ).get_data_frames()[0]
+
+        else:
+            df_list = []
+            for play in track(self.play_type):
+
+                temp_df = nba.LeagueDashPtStats(
+                    season=self.season,
+                    per_mode_simple="PerGame",
+                    pt_measure_type=play,
+                    player_or_team="Player",
+                    season_type_all_star=self.season_type,
+                ).get_data_frames()[0]
+                df_list.append(temp_df)
+                sleep(1)
+
+            self.tracking = pd.concat(df_list)
+
+        return self.tracking
+
+    def get_tracking_team(
+        self,
+        track_type: str = "Efficiency",
+    ) -> pd.DataFrame:
+        self.play_type = Formatter.check_playtype(track_type, tracking=True)
+
+        if isinstance(self.play_type, str):
+            self.tracking = nba.LeagueDashPtStats(
+                season=self.season,
+                per_mode_simple="PerGame",
+                pt_measure_type=self.play_type,
+                player_or_team="Team",
+                season_type_all_star=self.season_type,
+            ).get_data_frames()[0]
+
+        else:
+            df_list = []
+            for play in track(self.play_type):
+
+                temp_df = nba.LeagueDashPtStats(
+                    season=self.season,
+                    per_mode_simple="PerGame",
+                    pt_measure_type=play,
+                    player_or_team="Team",
+                    season_type_all_star=self.season_type,
+                ).get_data_frames()[0]
+                df_list.append(temp_df)
+                sleep(1)
+
+            self.tracking = pd.concat(df_list)
+
+        return self.tracking
+
 
 if __name__ == "__main__":
     seas = Season()
-    print(seas.get_synergy_player("All", False))
+    print(seas.get_tracking_team("All"))
