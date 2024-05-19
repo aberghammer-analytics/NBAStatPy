@@ -141,14 +141,21 @@ class Season:
         ).get_data_frames()[0]
         return self.player_estimated_metrics
 
-    def get_synergy_player(self, play_type: str = "Transition") -> pd.DataFrame:
+    def get_synergy_player(
+        self, play_type: str = "Transition", offensive: bool = True
+    ) -> pd.DataFrame:
         self.play_type = Formatter.check_playtype(play_type)
+        if offensive:
+            self.off_def = "offensive"
+        else:
+            self.off_def = "defensive"
+
         if isinstance(self.play_type, str):
             self.synergy = nba.SynergyPlayTypes(
                 season=self.season,
                 per_mode_simple="PerGame",
                 play_type_nullable=self.play_type,
-                type_grouping_nullable="offensive",
+                type_grouping_nullable=self.off_def,
                 player_or_team_abbreviation="P",
                 season_type_all_star=self.season_type,
             ).get_data_frames()[0]
@@ -161,7 +168,7 @@ class Season:
                     season=self.season,
                     per_mode_simple="PerGame",
                     play_type_nullable=play,
-                    type_grouping_nullable="offensive",
+                    type_grouping_nullable=self.off_def,
                     player_or_team_abbreviation="P",
                     season_type_all_star=self.season_type,
                 ).get_data_frames()[0]
@@ -172,14 +179,21 @@ class Season:
 
         return self.synergy
 
-    def get_synergy_team(self, play_type: str = "Transition") -> pd.DataFrame:
+    def get_synergy_team(
+        self, play_type: str = "Transition", offensive: bool = True
+    ) -> pd.DataFrame:
         self.play_type = Formatter.check_playtype(play_type)
+        if offensive:
+            self.off_def = "offensive"
+        else:
+            self.off_def = "defensive"
+
         if isinstance(self.play_type, str):
             self.synergy = nba.SynergyPlayTypes(
                 season=self.season,
                 per_mode_simple="PerGame",
                 play_type_nullable=self.play_type,
-                type_grouping_nullable="offensive",
+                type_grouping_nullable=self.off_def,
                 player_or_team_abbreviation="T",
                 season_type_all_star=self.season_type,
             ).get_data_frames()[0]
@@ -187,12 +201,11 @@ class Season:
         else:
             df_list = []
             for play in track(self.play_type):
-                print(play)
                 temp_df = nba.SynergyPlayTypes(
                     season=self.season,
                     per_mode_simple="PerGame",
                     play_type_nullable=play,
-                    type_grouping_nullable="offensive",
+                    type_grouping_nullable=self.off_def,
                     player_or_team_abbreviation="T",
                     season_type_all_star=self.season_type,
                 ).get_data_frames()[0]
@@ -206,4 +219,4 @@ class Season:
 
 if __name__ == "__main__":
     seas = Season()
-    print(seas.get_synergy_player())
+    print(seas.get_synergy_player("All", False))

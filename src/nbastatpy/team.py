@@ -41,6 +41,23 @@ class Team:
         ).get_data_frames()
         return self.roster
 
+    def get_general_splits(self) -> pd.DataFrame:
+        drop_cols = [
+            "TEAM_GAME_LOCATION",
+            "GAME_RESULT",
+            "SEASON_MONTH_NAME",
+            "SEASON_SEGMENT",
+            "TEAM_DAYS_REST_RANGE",
+        ]
+        self.general_splits = pd.concat(
+            nba.TeamDashboardByGeneralSplits(
+                team_id=self.id,
+                season=self.season,
+                season_type_all_star=self.season_type,
+            ).get_data_frames()
+        ).drop(columns=drop_cols)
+        return self.general_splits
+
     def get_leaders(self) -> pd.DataFrame:
         self.leaders = nba.FranchiseLeaders(team_id=self.id).get_data_frames()[0]
         return self.leaders
@@ -182,5 +199,5 @@ class Team:
 
 if __name__ == "__main__":
     team_name = "MIL"
-    team = Team(team_name)
-    print(team.get_player_matchups())
+    team = Team(team_name, season_year="2020", playoffs=True)
+    print(team.get_general_splits())
