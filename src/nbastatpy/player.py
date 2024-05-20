@@ -10,11 +10,20 @@ from nba_api.stats.endpoints import leaguegamefinder
 from nba_api.stats.static import players, teams
 from PIL import Image
 
-from utils import Formatter
+from utils import Formatter, PlayTypes
 
 
 class Player:
-    def __init__(self, player: str, season_year: str = None, playoffs=False):
+    def __init__(
+        self,
+        player: str,
+        season_year: str = None,
+        playoffs: bool = False,
+        permode: str = "PERGAME",
+    ):
+        self.permode = PlayTypes.PERMODE[
+            permode.replace("_", "").replace("-", "").upper()
+        ]
         self.name_meta = players.find_player_by_id(player)
         if self.name_meta:
             self.name_meta = [self.name_meta]
@@ -75,7 +84,10 @@ class Player:
 
         self.splits_data = pd.concat(
             nba.PlayerDashboardByGeneralSplits(
-                self.id, season=self.season, season_type_playoffs=self.season_type
+                self.id,
+                season=self.season,
+                season_type_playoffs=self.season_type,
+                per_mode_detailed=self.permode,
             ).get_data_frames()
         )
 
@@ -90,7 +102,10 @@ class Player:
 
         self.game_splits = pd.concat(
             nba.PlayerDashboardByGameSplits(
-                self.id, season=self.season, season_type_playoffs=self.season_type
+                self.id,
+                season=self.season,
+                season_type_playoffs=self.season_type,
+                per_mode_detailed=self.permode,
             ).get_data_frames()
         )
         return self.game_splits
@@ -99,7 +114,10 @@ class Player:
 
         self.shooting_splits = pd.concat(
             nba.PlayerDashboardByShootingSplits(
-                self.id, season=self.season, season_type_playoffs=self.season_type
+                self.id,
+                season=self.season,
+                season_type_playoffs=self.season_type,
+                per_mode_detailed=self.permode,
             ).get_data_frames()
         )
         return self.shooting_splits
@@ -114,10 +132,14 @@ class Player:
         self.combine_stats = nba.DraftCombineStats(
             season_all_time=self.draft_year
         ).get_data_frames()[0]
-        self.combine_nonstationary_shooting = (
-            nba.DraftCombineNonStationaryShooting().get_data_frames()[0]
-        )
-        self.combine_spot_shooting = nba.DraftCombineSpotShooting().get_data_frames()[0]
+
+        self.combine_nonstationary_shooting = nba.DraftCombineNonStationaryShooting(
+            season_year=self.draft_year
+        ).get_data_frames()[0]
+
+        self.combine_spot_shooting = nba.DraftCombineSpotShooting(
+            season_year=self.draft_year
+        ).get_data_frames()[0]
 
         return [
             self.combine_stats,
@@ -144,12 +166,14 @@ class Player:
                 def_player_id_nullable=self.id,
                 season=self.season,
                 season_type_playoffs=self.season_type,
+                per_mode_simple=self.permode,
             ).get_data_frames()[0]
         else:
             self.matchups = nba.LeagueSeasonMatchups(
                 off_player_id_nullable=self.id,
                 season=self.season,
                 season_type_playoffs=self.season_type,
+                per_mode_simple=self.permode,
             ).get_data_frames()[0]
         return self.matchups
 
@@ -164,6 +188,7 @@ class Player:
                 player_id=self.id,
                 season=self.season,
                 season_type_playoffs=self.season_type,
+                per_mode_detailed=self.permode,
             ).get_data_frames()
         )
         return self.clutch
@@ -189,6 +214,7 @@ class Player:
                             team_id=team,
                             season=self.season,
                             season_type_all_star=self.season_type,
+                            per_mode_simple=self.permode,
                         ).get_data_frames()
                     )
                 )
@@ -202,6 +228,7 @@ class Player:
                     team_id=teams[0],
                     season=self.season,
                     season_type_all_star=self.season_type,
+                    per_mode_simple=self.permode,
                 ).get_data_frames()
             )
 
@@ -234,6 +261,7 @@ class Player:
                             team_id=team,
                             season=self.season,
                             season_type_all_star=self.season_type,
+                            per_mode_simple=self.permode,
                         ).get_data_frames()
                     )
                 )
@@ -247,6 +275,7 @@ class Player:
                     team_id=teams[0],
                     season=self.season,
                     season_type_all_star=self.season_type,
+                    per_mode_simple=self.permode,
                 ).get_data_frames()
             )
 
@@ -272,6 +301,7 @@ class Player:
             team_id=opp_tm_id,
             season=self.season,
             season_type_all_star=self.season_type,
+            per_mode_simple=self.permode,
         ).get_data_frames()[0]
         return self.defense_against_team
 
@@ -296,6 +326,7 @@ class Player:
                             team_id=team,
                             season=self.season,
                             season_type_all_star=self.season_type,
+                            per_mode_simple=self.permode,
                         ).get_data_frames()
                     )
                 )
@@ -309,6 +340,7 @@ class Player:
                     team_id=teams[0],
                     season=self.season,
                     season_type_all_star=self.season_type,
+                    per_mode_simple=self.permode,
                 ).get_data_frames()
             )
 

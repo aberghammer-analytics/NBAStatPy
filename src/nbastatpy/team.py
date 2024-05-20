@@ -8,11 +8,20 @@ from cairosvg import svg2png
 from nba_api.stats.static import teams
 from PIL import Image
 
-from utils import Formatter
+from utils import Formatter, PlayTypes
 
 
 class Team:
-    def __init__(self, team_abbreviation: str, season_year: str = None, playoffs=False):
+    def __init__(
+        self,
+        team_abbreviation: str,
+        season_year: str = None,
+        playoffs=False,
+        permode: str = "PerGame",
+    ):
+        self.permode = PlayTypes.PERMODE[
+            permode.replace("_", "").replace("-", "").upper()
+        ]
         if season_year:
             self.season_year = season_year
         else:
@@ -37,7 +46,8 @@ class Team:
 
     def get_roster(self) -> List[pd.DataFrame]:
         self.roster = nba.CommonTeamRoster(
-            self.id, season=self.season
+            self.id,
+            season=self.season,
         ).get_data_frames()
         return self.roster
 
@@ -54,6 +64,7 @@ class Team:
                 team_id=self.id,
                 season=self.season,
                 season_type_all_star=self.season_type,
+                per_mode_detailed=self.permode,
             ).get_data_frames()
         ).drop(columns=drop_cols)
         return self.general_splits
@@ -64,6 +75,7 @@ class Team:
                 team_id=self.id,
                 season=self.season,
                 season_type_all_star=self.season_type,
+                per_mode_detailed=self.permode,
             ).get_data_frames()
         )
         return self.shooting_splits
@@ -83,6 +95,7 @@ class Team:
             team_id_nullable=self.id,
             season=self.season,
             season_type_all_star=self.season_type,
+            per_mode_detailed=self.permode,
         ).get_data_frames()[0]
         self.season_lineups["season"] = self.season
         self.season_lineups["season_type"] = self.season_type
@@ -94,6 +107,7 @@ class Team:
             team_id_nullable=self.id,
             season=self.season,
             season_type_all_star=self.season_type,
+            per_mode_simple=self.permode,
         ).get_data_frames()[0]
         self.opponent_shooting["season"] = self.season
         self.opponent_shooting["season_type"] = self.season_type
@@ -105,6 +119,7 @@ class Team:
             team_id_nullable=self.id,
             season=self.season,
             season_type_all_star=self.season_type,
+            per_mode_detailed=self.permode,
         ).get_data_frames()[0]
         self.player_clutch["season"] = self.season
         self.player_clutch["season_type"] = self.season_type
@@ -116,6 +131,7 @@ class Team:
             team_id_nullable=self.id,
             season=self.season,
             season_type_all_star=self.season_type,
+            per_mode_simple=self.permode,
         ).get_data_frames()[0]
         self.player_shots["season"] = self.season
         self.player_shots["season_type"] = self.season_type
@@ -127,6 +143,7 @@ class Team:
             team_id_nullable=self.id,
             season=self.season,
             season_type_all_star=self.season_type,
+            per_mode_detailed=self.permode,
         ).get_data_frames()[0]
         self.player_shot_locations["season"] = self.season
         self.player_shot_locations["season_type"] = self.season_type
@@ -138,6 +155,7 @@ class Team:
             team_id_nullable=self.id,
             season=self.season,
             season_type_all_star=self.season_type,
+            per_mode_detailed=self.permode,
         ).get_data_frames()[0]
         self.player_stats["season"] = self.season
         self.player_stats["season_type"] = self.season_type
@@ -149,6 +167,7 @@ class Team:
             team_id_nullable=self.id,
             season=self.season,
             season_type_all_star=self.season_type,
+            per_mode_simple=self.permode,
         ).get_data_frames()[0]
         self.player_point_defend["season"] = self.season
         self.player_point_defend["season_type"] = self.season_type
@@ -172,6 +191,7 @@ class Team:
             season=self.season,
             season_type_all_star=self.season_type,
             minutes_min=1,
+            per_mode_detailed=self.permode,
         ).get_data_frames()[0]
         self.lineup_details["season"] = self.season
         self.lineup_details["season_type"] = self.season_type
@@ -180,7 +200,10 @@ class Team:
 
     def get_player_on_details(self) -> pd.DataFrame:
         self.player_on_details = nba.LeaguePlayerOnDetails(
-            team_id=self.id, season=self.season, season_type_all_star=self.season_type
+            team_id=self.id,
+            season=self.season,
+            season_type_all_star=self.season_type,
+            per_mode_detailed=self.permode,
         ).get_data_frames()[0]
         self.player_on_details["season"] = self.season
         self.player_on_details["season_type"] = self.season_type
@@ -193,12 +216,14 @@ class Team:
                 def_team_id_nullable=self.id,
                 season=self.season,
                 season_type_playoffs=self.season_type,
+                per_mode_simple=self.permode,
             ).get_data_frames()[0]
         else:
             self.player_matchups = nba.LeagueSeasonMatchups(
                 off_team_id_nullable=self.id,
                 season=self.season,
                 season_type_playoffs=self.season_type,
+                per_mode_simple=self.permode,
             ).get_data_frames()[0]
 
         self.player_matchups["season"] = self.season
@@ -212,6 +237,7 @@ class Team:
                 team_id=self.id,
                 season=self.season,
                 season_type_all_star=self.season_type,
+                per_mode_simple=self.permode,
             ).get_data_frames()
         )
 
@@ -221,6 +247,9 @@ class Team:
         )
         self.player_passes = self.player_passes.drop(columns=group_cols)
         return self.player_passes
+
+    def get_player_onoff(self) -> pd.DataFrame:
+        self.player_onoff = pd.concat(nba.TeamPlayerOnOffDetails)
 
 
 if __name__ == "__main__":
