@@ -51,6 +51,12 @@ class Team:
         ).get_data_frames()
         return self.roster
 
+    def get_year_by_year(self) -> pd.DataFrame():
+        self.year_by_year = nba.TeamYearByYearStats(
+            team_id=self.id, per_mode_simple=self.permode
+        ).get_data_frames()[0]
+        return self.year_by_year
+
     def get_general_splits(self) -> pd.DataFrame:
         drop_cols = [
             "TEAM_GAME_LOCATION",
@@ -246,13 +252,21 @@ class Team:
             Formatter.combine_strings, axis=1
         )
         self.player_passes = self.player_passes.drop(columns=group_cols)
-        return self.player_passes
+        return self.player_passes.reset_index(drop=True)
 
     def get_player_onoff(self) -> pd.DataFrame:
-        self.player_onoff = pd.concat(nba.TeamPlayerOnOffDetails)
+        self.player_onoff = pd.concat(
+            nba.TeamPlayerOnOffDetails(
+                team_id=team.id,
+                season=self.season,
+                season_type_all_star=self.season_type,
+                per_mode_detailed=self.permode,
+            ).get_data_frames()[1:]
+        )
+        return self.player_onoff.reset_index(drop=True)
 
 
 if __name__ == "__main__":
     team_name = "MIL"
     team = Team(team_name, season_year="2020", playoffs=True)
-    print(team.get_player_passes())
+    print(team.get_year_by_year())

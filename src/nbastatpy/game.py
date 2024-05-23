@@ -87,8 +87,14 @@ class Game:
         self.playbyplay = nba.PlayByPlayV3(self.game_id).get_data_frames()[0]
         return self.playbyplay
 
+    def get_win_probability(self) -> pd.DataFrame:
+        self.win_probability = nba.WinProbabilityPBP(
+            game_id=self.game_id
+        ).get_data_frames()[0]
+        return self.win_probability
+
 
 if __name__ == "__main__":
     GAME_ID = "0022301148"
     game = Game(game_id=GAME_ID)
-    print("dang")
+    print(game.get_win_probability())
