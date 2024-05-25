@@ -30,3 +30,12 @@ player = Player(
 )
 ```
 
+Once you have the player object, you can get different datasets based on the criteria. For instance, you can get the awards the player has won by doing the following:
+
+```{python}
+player.get_awards()
+```
+
+This returns a pandas dataframe with the awards won by the player each year.
+
+There are a lot of endpoints and various arguments for more complex queries like tracking and synergy datasets.

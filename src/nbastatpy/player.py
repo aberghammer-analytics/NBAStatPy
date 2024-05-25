@@ -1,16 +1,16 @@
-from datetime import date
-from io import BytesIO
+from io import BytesIO, StringIO
 from typing import List
 
 import nba_api.stats.endpoints as nba
 import pandas as pd
 import requests
+from bs4 import BeautifulSoup
 from loguru import logger
 from nba_api.stats.endpoints import leaguegamefinder
 from nba_api.stats.static import players, teams
 from PIL import Image
 
-from utils import Formatter, PlayTypes
+from nbastatpy.utils import Formatter, PlayTypes
 
 
 class Player:
@@ -38,6 +38,8 @@ class Player:
             )
         self.id = self.name_meta[0]["id"]
         self.name = self.name_meta[0]["full_name"]
+        self.first_name = self.name_meta[0]["first_name"]
+        self.last_name = self.name_meta[0]["last_name"]
         self.is_active = self.name_meta[0]["is_active"]
 
         if season_year:
@@ -61,6 +63,28 @@ class Player:
             setattr(self, attr_name.lower(), self.common_info.get(attr_name, None))
 
         return self.common_info
+
+    def get_salary(self) -> pd.DataFrame:
+        self.salary_url = f"https://hoopshype.com/player/{self.first_name}-{self.last_name}/salary/".lower()
+        result = requests.get(self.salary_url)
+        soup = BeautifulSoup(result.content, features="lxml")
+        tables = soup.find_all("table")
+        if len(tables) > 1:
+
+            projected = pd.read_html(StringIO(tables[0].prettify()))[0]
+            projected["Team"] = projected.columns[1]
+            projected = projected.rename(columns={projected.columns[1]: "Salary"})
+            projected["Historical_Projected"] = "Projected"
+
+            historical = pd.read_html(StringIO(tables[1].prettify()))[0]
+            historical["Historical_Projected"] = "Historical"
+
+            self.salary_df = pd.concat([projected, historical])
+
+        else:
+            self.salary_df = pd.read_html(StringIO(tables[0].prettify()))[0]
+
+        return self.salary_df
 
     def get_headshot(self):
         pic_url = f"https://cdn.nba.com/headshots/nba/latest/1040x760/{self.id}.png"
@@ -395,7 +419,7 @@ class Player:
 
 
 if __name__ == "__main__":
-    player_name = "203507"
+    player_name = "giannis"
     player_seas = "2020"
     player = Player(player_name, player_seas)
-    print(player.get_shot_chart())
+    print(player.get_salary())

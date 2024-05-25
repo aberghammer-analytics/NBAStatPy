@@ -10,7 +10,7 @@ from nba_api.stats.endpoints import leaguegamefinder
 from nba_api.stats.static import players, teams
 from PIL import Image
 
-from utils import Formatter, PlayTypes
+from nbastatpy.utils import Formatter, PlayTypes
 
 
 class Game:

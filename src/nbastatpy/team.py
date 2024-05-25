@@ -1,14 +1,15 @@
-from io import BytesIO
+from io import BytesIO, StringIO
 from typing import List
 
 import nba_api.stats.endpoints as nba
 import pandas as pd
 import requests
+from bs4 import BeautifulSoup
 from cairosvg import svg2png
 from nba_api.stats.static import teams
 from PIL import Image
 
-from utils import Formatter, PlayTypes
+from nbastatpy.utils import Formatter, PlayTypes
 
 
 class Team:
@@ -50,6 +51,21 @@ class Team:
             season=self.season,
         ).get_data_frames()
         return self.roster
+
+    def get_salary(self):
+        tm_name = "_".join(self.full_name.split(" ")).lower()
+        year = self.season.split("-")[0]
+        season_string = year + "-" + str(int(year) + 1)
+        self.salary_url = f"https://hoopshype.com/salaries/{tm_name}/{season_string}/"
+
+        result = requests.get(self.salary_url)
+        soup = BeautifulSoup(result.content, features="lxml")
+        tables = soup.find_all("table")[0].prettify()
+
+        self.salary_df = pd.read_html(StringIO(tables))[0]
+        self.salary_df.columns = self.salary_df.columns.droplevel()
+
+        return self.salary_df
 
     def get_year_by_year(self) -> pd.DataFrame():
         self.year_by_year = nba.TeamYearByYearStats(
@@ -269,4 +285,4 @@ class Team:
 if __name__ == "__main__":
     team_name = "MIL"
     team = Team(team_name, season_year="2020", playoffs=True)
-    print(team.get_year_by_year())
+    print(team.get_salary())

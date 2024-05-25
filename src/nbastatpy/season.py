@@ -1,10 +1,13 @@
+from io import StringIO
 from time import sleep
 
 import nba_api.stats.endpoints as nba
 import pandas as pd
+import requests
+from bs4 import BeautifulSoup
 from rich.progress import track
 
-from utils import Formatter, PlayTypes
+from nbastatpy.utils import Formatter, PlayTypes
 
 
 class Season:
@@ -23,6 +26,19 @@ class Season:
         self.season_type = "Regular Season"
         if playoffs:
             self.season_type = "Playoffs"
+
+    def get_salaries(self) -> pd.DataFrame:
+        year = self.season.split("-")[0]
+        season_string = year + "-" + str(int(year) + 1)
+
+        url = f"https://hoopshype.com/salaries/players/{season_string}/"
+        result = requests.get(url)
+        soup = BeautifulSoup(result.content, features="lxml")
+        tables = soup.find_all("table")[0].prettify()
+
+        self.salary_df = pd.read_html(StringIO(tables))[0].drop(columns=["Unnamed: 0"])
+
+        return self.salary_df
 
     def get_lineups(self):
         self.lineups = nba.LeagueDashLineups(
@@ -126,31 +142,35 @@ class Season:
             season=self.season,
             season_type_all_star=self.season_type,
             player_or_team_abbreviation="T",
-
         ).get_data_frames()[0]
         return self.team_games
 
     def get_player_hustle(self):
         self.player_hustle = nba.LeagueHustleStatsPlayer(
-            season=self.season, season_type_all_star=self.season_type,
+            season=self.season,
+            season_type_all_star=self.season_type,
         ).get_data_frames()[0]
         return self.player_hustle
 
     def get_team_hustle(self):
         self.team_hustle = nba.LeagueHustleStatsTeam(
-            season=self.season, season_type_all_star=self.season_type,
+            season=self.season,
+            season_type_all_star=self.season_type,
         ).get_data_frames()[0]
         return self.team_hustle
 
     def get_player_matchups(self):
         self.player_matchups = nba.LeagueSeasonMatchups(
-            season=self.season, season_type_playoffs=self.season_type, per_mode_simple=self.permode
+            season=self.season,
+            season_type_playoffs=self.season_type,
+            per_mode_simple=self.permode,
         ).get_data_frames()[0]
         return self.player_matchups
 
     def get_player_estimated_metrics(self):
         self.player_estimated_metrics = nba.PlayerEstimatedMetrics(
-            season=self.season, season_type=self.season_type,
+            season=self.season,
+            season_type=self.season_type,
         ).get_data_frames()[0]
         return self.player_estimated_metrics
 
@@ -369,6 +389,6 @@ class Season:
 
 
 if __name__ == "__main__":
-    seas = Season(permode="perposs")
+    seas = Season(season_year="2004")
     print(seas.permode)
-    print(seas.get_lineups())
+    print(seas.get_salaries())

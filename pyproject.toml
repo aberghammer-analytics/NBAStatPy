@@ -1,9 +1,17 @@
 [tool.poetry]
 name = "nbastatpy"
 version = "0.1.0"
-description = ""
-authors = ["Anthony Berghammer <aberghammer.analytics@gmail.com>"]
+description = "An easy-to-use wrapper for nba_api to easily find data for a player, game, team, or season"
+authors = []
+maintainers = ["Anthony Berghammer <aberghammer.analytics@gmail.com>"]
 readme = "README.md"
+repository = "https://github.com/aberghammer-analytics/NBAStatPy"
+documentation = "https://github.com/aberghammer-analytics/NBAStatPy/blob/main/README.md"
+keywords = ["basketball", "data", "nba", "sports", "stats"]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -14,6 +22,8 @@ requests = "^2.31.0"
 loguru = "^0.7.2"
 cairosvg = "^2.7.1"
 rich = "^13.7.1"
+bs4 = "^0.0.2"
+lxml = "^5.2.2"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.4.2"
