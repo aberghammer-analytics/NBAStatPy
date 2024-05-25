@@ -21,6 +21,15 @@ class Player:
         playoffs: bool = False,
         permode: str = "PERGAME",
     ):
+        """
+        Initializes a Player object.
+
+        Args:
+            player (str): The name or ID of the player.
+            season_year (str, optional): The season year. Defaults to None.
+            playoffs (bool, optional): Whether to retrieve playoff data. Defaults to False.
+            permode (str, optional): The per mode for the player's stats. Defaults to "PERGAME".
+        """
         self.permode = PlayTypes.PERMODE[
             permode.replace("_", "").replace("-", "").upper()
         ]
@@ -54,23 +63,32 @@ class Player:
     # TODO: player vs player
 
     def get_common_info(self) -> pd.DataFrame:
-        """Gets common info like height, weight, draft_year, etc. and sets as class attr"""
-        self.common_info = (
-            nba.CommonPlayerInfo(self.id).get_data_frames()[0].iloc[0].to_dict()
-        )
+            """Gets common info like height, weight, draft_year, etc. and sets as class attr
+            
+            Returns:
+                pd.DataFrame: A DataFrame containing the common information of the player.
+            """
+            self.common_info = (
+                nba.CommonPlayerInfo(self.id).get_data_frames()[0].iloc[0].to_dict()
+            )
 
-        for attr_name, value in self.common_info.items():
-            setattr(self, attr_name.lower(), self.common_info.get(attr_name, None))
+            for attr_name, value in self.common_info.items():
+                setattr(self, attr_name.lower(), self.common_info.get(attr_name, None))
 
-        return self.common_info
+            return self.common_info
 
     def get_salary(self) -> pd.DataFrame:
+        """
+        Retrieves the salary information for a player from hoopshype.com.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the salary information for the player.
+        """
         self.salary_url = f"https://hoopshype.com/player/{self.first_name}-{self.last_name}/salary/".lower()
         result = requests.get(self.salary_url)
         soup = BeautifulSoup(result.content, features="lxml")
         tables = soup.find_all("table")
         if len(tables) > 1:
-
             projected = pd.read_html(StringIO(tables[0].prettify()))[0]
             projected["Team"] = projected.columns[1]
             projected = projected.rename(columns={projected.columns[1]: "Salary"})
@@ -87,6 +105,12 @@ class Player:
         return self.salary_df
 
     def get_headshot(self):
+        """
+        Retrieves the headshot image of the player.
+
+        Returns:
+            PIL.Image.Image: The headshot image of the player.
+        """
         pic_url = f"https://cdn.nba.com/headshots/nba/latest/1040x760/{self.id}.png"
         pic = requests.get(pic_url)
         self.headshot = Image.open(BytesIO(pic.content))
@@ -172,11 +196,21 @@ class Player:
         ]
 
     def get_awards(self) -> pd.DataFrame:
-        """Gets any awards won by the player"""
+        """Gets any awards won by the player.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the player's awards.
+        """
         self.awards = nba.PlayerAwards(self.id).get_data_frames()[0]
         return self.awards
 
     def get_games_boxscore(self) -> pd.DataFrame:
+        """
+        Retrieves the boxscore data for the games played by the player.
+
+        Returns:
+            pd.DataFrame: The boxscore data for the player's games.
+        """
         self.games_boxscore = leaguegamefinder.LeagueGameFinder(
             player_id_nullable=self.id,
             season_nullable=self.season,
@@ -185,6 +219,16 @@ class Player:
         return self.games_boxscore
 
     def get_matchups(self, defense: bool = False) -> pd.DataFrame:
+        """
+        Retrieves the matchups data for the player.
+
+        Args:
+            defense (bool, optional): If True, retrieves the defensive matchups data. 
+                If False, retrieves the offensive matchups data. Defaults to False.
+
+        Returns:
+            pd.DataFrame: The matchups data for the player.
+        """
         if defense:
             self.matchups = nba.LeagueSeasonMatchups(
                 def_player_id_nullable=self.id,
@@ -218,6 +262,12 @@ class Player:
         return self.clutch
 
     def get_pt_pass(self) -> pd.DataFrame:
+        """
+        Retrieves the passing statistics for the player.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the passing statistics for the player.
+        """
         if not hasattr(self, "season_totals"):
             logger.info("Getting Teams")
             teams = self.get_season_career_totals()[0]
@@ -265,6 +315,12 @@ class Player:
         return self.pt_pass
 
     def get_pt_reb(self) -> pd.DataFrame:
+        """
+        Retrieves the rebounds data for the player.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the rebounds data.
+        """
         if not hasattr(self, "season_totals"):
             logger.info("Getting Teams")
             teams = self.get_season_career_totals()[0]
@@ -318,6 +374,15 @@ class Player:
         return self.pt_reb
 
     def get_defense_against_team(self, opposing_team: str) -> pd.DataFrame:
+        """
+        Retrieves the defensive statistics of the player against a specific team.
+
+        Args:
+            opposing_team (str): The abbreviation of the opposing team.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the defensive statistics of the player against the specified team.
+        """
         opp_tm_id = teams.find_team_by_abbreviation(opposing_team)["id"]
 
         self.defense_against_team = nba.PlayerDashPtShotDefend(
@@ -330,6 +395,12 @@ class Player:
         return self.defense_against_team
 
     def get_pt_shots(self) -> pd.DataFrame:
+        """
+        Retrieves the shots data for the player.
+
+        Returns:
+            pd.DataFrame: The shots data for the player.
+        """
         if not hasattr(self, "season_totals"):
             logger.info("Getting Teams")
             teams = self.get_season_career_totals()[0]
@@ -383,6 +454,12 @@ class Player:
         return self.pt_shots
 
     def get_shot_chart(self) -> pd.DataFrame:
+        """
+        Retrieves the shot chart data for the player.
+
+        Returns:
+            pd.DataFrame: The shot chart data for the player.
+        """
         if not hasattr(self, "season_totals"):
             logger.info("Getting Teams")
             teams = self.get_season_career_totals()[0]

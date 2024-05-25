@@ -14,12 +14,28 @@ from nbastatpy.utils import Formatter, PlayTypes
 
 class Team:
     def __init__(
-        self,
-        team_abbreviation: str,
-        season_year: str = None,
-        playoffs=False,
-        permode: str = "PerGame",
-    ):
+            self,
+            team_abbreviation: str,
+            season_year: str = None,
+            playoffs=False,
+            permode: str = "PerGame",
+        ):
+        """
+        Initializes a Team object.
+
+        Parameters:
+        - team_abbreviation (str): The abbreviation of the NBA team.
+        - season_year (str, optional): The season year. If not provided, the current season year will be used.
+        - playoffs (bool, optional): Specifies whether the team's statistics are for playoffs. Default is False.
+        - permode (str, optional): The mode for the team's statistics. Default is "PerGame".
+
+        Attributes:
+        - permode (str): The formatted permode for the team's statistics.
+        - season_year (str): The season year.
+        - info (dict): The information about the team.
+        - season (str): The formatted season.
+        - season_type (str): The type of season (Regular Season or Playoffs).
+        """
         self.permode = PlayTypes.PERMODE[
             permode.replace("_", "").replace("-", "").upper()
         ]
@@ -39,6 +55,12 @@ class Team:
             setattr(self, attr_name.lower(), self.info.get(attr_name, None))
 
     def get_logo(self):
+        """
+        Retrieves and returns the logo of the NBA team.
+
+        Returns:
+            PIL.Image.Image: The logo image of the NBA team.
+        """
         pic_url = f"https://cdn.nba.com/logos/nba/{self.id}/primary/L/logo.svg"
         pic = requests.get(pic_url)
         pic = svg2png(bytestring=pic.content, write_to=None)
@@ -46,13 +68,25 @@ class Team:
         return self.logo
 
     def get_roster(self) -> List[pd.DataFrame]:
+        """
+        Retrieves the roster of the team for the specified season.
+
+        Returns:
+            List[pd.DataFrame]: A list of pandas DataFrames containing the roster data.
+        """
         self.roster = nba.CommonTeamRoster(
             self.id,
             season=self.season,
         ).get_data_frames()
         return self.roster
 
-    def get_salary(self):
+    def get_salary(self) -> pd.DataFrame:
+        """
+        Retrieves the salary information for the team from hoopshype.com.
+
+        Returns:
+            pandas.DataFrame: A DataFrame containing the salary information for the team.
+        """
         tm_name = "_".join(self.full_name.split(" ")).lower()
         year = self.season.split("-")[0]
         season_string = year + "-" + str(int(year) + 1)
@@ -67,13 +101,25 @@ class Team:
 
         return self.salary_df
 
-    def get_year_by_year(self) -> pd.DataFrame():
+    def get_year_by_year(self) -> pd.DataFrame:
+        """
+        Retrieves the year-by-year statistics for the team.
+
+        Returns:
+            pd.DataFrame: The year-by-year statistics for the team.
+        """
         self.year_by_year = nba.TeamYearByYearStats(
             team_id=self.id, per_mode_simple=self.permode
         ).get_data_frames()[0]
         return self.year_by_year
 
     def get_general_splits(self) -> pd.DataFrame:
+        """
+        Retrieves the general splits data for the team.
+
+        Returns:
+            pd.DataFrame: The general splits data for the team.
+        """
         drop_cols = [
             "TEAM_GAME_LOCATION",
             "GAME_RESULT",
@@ -92,6 +138,12 @@ class Team:
         return self.general_splits
 
     def get_shooting_splits(self) -> pd.DataFrame:
+        """
+        Retrieves shooting splits data for the team.
+
+        Returns:
+            pd.DataFrame: The shooting splits data for the team.
+        """
         self.shooting_splits = pd.concat(
             nba.TeamDashboardByShootingSplits(
                 team_id=self.id,
@@ -103,16 +155,34 @@ class Team:
         return self.shooting_splits
 
     def get_leaders(self) -> pd.DataFrame:
+        """
+        Retrieves the franchise leaders data for the team.
+
+        Returns:
+            pd.DataFrame: The franchise leaders data for the team.
+        """
         self.leaders = nba.FranchiseLeaders(team_id=self.id).get_data_frames()[0]
         return self.leaders
 
     def get_franchise_players(self) -> pd.DataFrame:
+        """
+        Retrieves the franchise players for the team.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the franchise players' data.
+        """
         self.franchise_players = nba.FranchisePlayers(
             team_id=self.id
         ).get_data_frames()[0]
         return self.franchise_players
 
     def get_season_lineups(self) -> pd.DataFrame:
+        """
+        Retrieves the season lineups for the team.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the season lineups data.
+        """
         self.season_lineups = nba.LeagueDashLineups(
             team_id_nullable=self.id,
             season=self.season,
@@ -125,6 +195,12 @@ class Team:
         return self.season_lineups
 
     def get_opponent_shooting(self) -> pd.DataFrame:
+        """
+        Retrieves the opponent shooting statistics for the team.
+
+        Returns:
+            pd.DataFrame: DataFrame containing the opponent shooting statistics.
+        """
         self.opponent_shooting = nba.LeagueDashOppPtShot(
             team_id_nullable=self.id,
             season=self.season,
@@ -137,6 +213,12 @@ class Team:
         return self.opponent_shooting
 
     def get_player_clutch(self) -> pd.DataFrame:
+        """
+        Retrieves the clutch statistics for the players of the team.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the clutch statistics for the players of the team.
+        """
         self.player_clutch = nba.LeagueDashPlayerClutch(
             team_id_nullable=self.id,
             season=self.season,
@@ -149,6 +231,12 @@ class Team:
         return self.player_clutch
 
     def get_player_shots(self) -> pd.DataFrame:
+        """
+        Retrieves the player shots data for the team.
+
+        Returns:
+            pd.DataFrame: The player shots data for the team.
+        """
         self.player_shots = nba.LeagueDashPlayerPtShot(
             team_id_nullable=self.id,
             season=self.season,
@@ -161,6 +249,12 @@ class Team:
         return self.player_shots
 
     def get_player_shot_locations(self) -> pd.DataFrame:
+        """
+        Retrieves the shot locations data for the players of the team.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the shot locations data for the players.
+        """
         self.player_shot_locations = nba.LeagueDashPlayerShotLocations(
             team_id_nullable=self.id,
             season=self.season,
@@ -173,6 +267,12 @@ class Team:
         return self.player_shot_locations
 
     def get_player_stats(self) -> pd.DataFrame:
+        """
+        Retrieves the player statistics for the team.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the player statistics.
+        """
         self.player_stats = nba.LeagueDashPlayerStats(
             team_id_nullable=self.id,
             season=self.season,
@@ -185,6 +285,12 @@ class Team:
         return self.player_stats
 
     def get_player_point_defend(self) -> pd.DataFrame:
+        """
+        Retrieves the player point defense data for the team.
+
+        Returns:
+            pd.DataFrame: The player point defense data for the team.
+        """
         self.player_point_defend = nba.LeagueDashPtDefend(
             team_id_nullable=self.id,
             season=self.season,
@@ -197,6 +303,12 @@ class Team:
         return self.player_point_defend
 
     def get_player_hustle(self) -> pd.DataFrame:
+        """
+        Retrieves the hustle stats for the players of the team.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the hustle stats for the players.
+        """
         self.player_hustle = nba.LeagueHustleStatsPlayer(
             team_id_nullable=self.id,
             season=self.season,
@@ -208,6 +320,12 @@ class Team:
         return self.player_hustle
 
     def get_lineup_details(self) -> pd.DataFrame:
+        """
+        Retrieves the lineup details for the team.
+
+        Returns:
+            pd.DataFrame: The lineup details for the team.
+        """
         self.lineup_details = nba.LeagueLineupViz(
             team_id_nullable=self.id,
             season=self.season,
@@ -221,6 +339,12 @@ class Team:
         return self.lineup_details
 
     def get_player_on_details(self) -> pd.DataFrame:
+        """
+        Retrieves the player on-court details for the team.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the player on-court details.
+        """
         self.player_on_details = nba.LeaguePlayerOnDetails(
             team_id=self.id,
             season=self.season,
@@ -233,6 +357,15 @@ class Team:
         return self.player_on_details
 
     def get_player_matchups(self, defense=False) -> pd.DataFrame:
+        """
+        Retrieves player matchups for the team.
+
+        Args:
+            defense (bool, optional): If True, retrieves defensive matchups. If False, retrieves offensive matchups. Defaults to False.
+
+        Returns:
+            pd.DataFrame: DataFrame containing player matchups for the team.
+        """
         if defense:
             self.player_matchups = nba.LeagueSeasonMatchups(
                 def_team_id_nullable=self.id,
@@ -254,6 +387,12 @@ class Team:
         return self.player_matchups
 
     def get_player_passes(self) -> pd.DataFrame:
+        """
+        Retrieves the player passes data for the team.
+
+        Returns:
+            pd.DataFrame: The player passes data for the team.
+        """
         self.player_passes = pd.concat(
             nba.TeamDashPtPass(
                 team_id=self.id,
@@ -271,6 +410,12 @@ class Team:
         return self.player_passes.reset_index(drop=True)
 
     def get_player_onoff(self) -> pd.DataFrame:
+        """
+        Retrieves the on-off court details for the players of the team.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the on-off court details for the players.
+        """
         self.player_onoff = pd.concat(
             nba.TeamPlayerOnOffDetails(
                 team_id=team.id,
