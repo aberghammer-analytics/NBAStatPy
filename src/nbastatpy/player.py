@@ -1,5 +1,4 @@
-from io import BytesIO, StringIO
-from typing import List
+from io import BytesIO
 
 import nba_api.stats.endpoints as nba
 import pandas as pd
@@ -60,22 +59,21 @@ class Player:
         if playoffs:
             self.season_type = "Playoffs"
 
-    # TODO: player vs player
 
     def get_common_info(self) -> pd.DataFrame:
-            """Gets common info like height, weight, draft_year, etc. and sets as class attr
-            
-            Returns:
-                pd.DataFrame: A DataFrame containing the common information of the player.
-            """
-            self.common_info = (
-                nba.CommonPlayerInfo(self.id).get_data_frames()[0].iloc[0].to_dict()
-            )
+        """Gets common info like height, weight, draft_year, etc. and sets as class attr
+        
+        Returns:
+            pd.DataFrame: A DataFrame containing the common information of the player.
+        """
+        self.common_info = (
+            nba.CommonPlayerInfo(self.id).get_data_frames()[0].iloc[0].to_dict()
+        )
 
-            for attr_name, value in self.common_info.items():
-                setattr(self, attr_name.lower(), self.common_info.get(attr_name, None))
+        for attr_name, value in self.common_info.items():
+            setattr(self, attr_name.lower(), self.common_info.get(attr_name, None))
 
-            return self.common_info
+        return self.common_info
 
     def get_salary(self) -> pd.DataFrame:
         """
@@ -84,23 +82,30 @@ class Player:
         Returns:
             pd.DataFrame: A DataFrame containing the salary information for the player.
         """
-        self.salary_url = f"https://hoopshype.com/player/{self.first_name}-{self.last_name}/salary/".lower()
-        result = requests.get(self.salary_url)
-        soup = BeautifulSoup(result.content, features="lxml")
+        salary_url = f"https://hoopshype.com/player/{self.first_name}-{self.last_name}/salary/".lower()
+        result = requests.get(salary_url)
+        soup = BeautifulSoup(result.content, features="html.parser")
         tables = soup.find_all("table")
         if len(tables) > 1:
-            projected = pd.read_html(StringIO(tables[0].prettify()))[0]
+            # Get the table rows
+            rows = [[cell.text.strip() for cell in row.find_all('td')] for row in tables[0].find_all('tr')]
+
+            rows2 = [[cell.text.strip() for cell in row.find_all('td')] for row in tables[1].find_all('tr')]
+            
+            projected = pd.DataFrame(rows[1:], columns=rows[0])
             projected["Team"] = projected.columns[1]
-            projected = projected.rename(columns={projected.columns[1]: "Salary"})
-            projected["Historical_Projected"] = "Projected"
-
-            historical = pd.read_html(StringIO(tables[1].prettify()))[0]
-            historical["Historical_Projected"] = "Historical"
-
+            projected = projected.rename(columns={projected.columns[1]:"Salary"})
+            projected["Salary_Type"] = "Projected"
+            
+            historical = pd.DataFrame(rows2[1:], columns=rows2[0])
+            historical["Salary_Type"] = "Historical"
+            
             self.salary_df = pd.concat([projected, historical])
-
+            
         else:
-            self.salary_df = pd.read_html(StringIO(tables[0].prettify()))[0]
+            # Get the table rows
+            rows = [[cell.text.strip() for cell in row.find_all('td')] for row in tables[0].find_all('tr')]
+            self.salary_df = pd.DataFrame(rows[1:], columns=rows[0])
 
         return self.salary_df
 

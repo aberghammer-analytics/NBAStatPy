@@ -1,4 +1,3 @@
-from io import StringIO
 from time import sleep
 
 import nba_api.stats.endpoints as nba
@@ -47,10 +46,18 @@ class Season:
 
         url = f"https://hoopshype.com/salaries/players/{season_string}/"
         result = requests.get(url)
-        soup = BeautifulSoup(result.content, features="lxml")
-        tables = soup.find_all("table")[0].prettify()
+        soup = BeautifulSoup(result.content, features="html.parser")
+        tables = soup.find_all("table")[0]
+        
+        # # Get the table rows
+        rows = [[cell.text.strip() for cell in row.find_all('td')] for row in tables.find_all('tr')]
 
-        self.salary_df = pd.read_html(StringIO(tables))[0].drop(columns=["Unnamed: 0"])
+        self.salary_df = pd.DataFrame(rows[1:], columns=rows[0])
+        if '' in self.salary_df.columns:
+            self.salary_df = self.salary_df.drop(columns=[""])
+            
+        self.salary_df['Season'] = self.salary_df.columns[1].replace("/", "_")
+        self.salary_df.columns = ["Player", "Salary", "Adj_Salary", "Season"]
 
         return self.salary_df
 

@@ -1,16 +1,9 @@
-from datetime import date
-from io import BytesIO
 from typing import List
 
 import nba_api.stats.endpoints as nba
 import pandas as pd
-import requests
-from loguru import logger
-from nba_api.stats.endpoints import leaguegamefinder
-from nba_api.stats.static import players, teams
-from PIL import Image
 
-from nbastatpy.utils import Formatter, PlayTypes
+from nbastatpy.utils import Formatter
 
 
 class Game:

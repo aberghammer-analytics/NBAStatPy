@@ -1,13 +1,10 @@
-from io import BytesIO, StringIO
 from typing import List
 
 import nba_api.stats.endpoints as nba
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-from cairosvg import svg2png
 from nba_api.stats.static import teams
-from PIL import Image
 
 from nbastatpy.utils import Formatter, PlayTypes
 
@@ -56,15 +53,14 @@ class Team:
 
     def get_logo(self):
         """
-        Retrieves and returns the logo of the NBA team.
+        Retrieves and returns the logo of the NBA team in svg format.
 
         Returns:
             PIL.Image.Image: The logo image of the NBA team.
         """
         pic_url = f"https://cdn.nba.com/logos/nba/{self.id}/primary/L/logo.svg"
         pic = requests.get(pic_url)
-        pic = svg2png(bytestring=pic.content, write_to=None)
-        self.logo = Image.open(BytesIO(pic))
+        self.logo = pic.content
         return self.logo
 
     def get_roster(self) -> List[pd.DataFrame]:
@@ -93,11 +89,18 @@ class Team:
         self.salary_url = f"https://hoopshype.com/salaries/{tm_name}/{season_string}/"
 
         result = requests.get(self.salary_url)
-        soup = BeautifulSoup(result.content, features="lxml")
-        tables = soup.find_all("table")[0].prettify()
-
-        self.salary_df = pd.read_html(StringIO(tables))[0]
-        self.salary_df.columns = self.salary_df.columns.droplevel()
+        soup = BeautifulSoup(result.content, features="html.parser")
+        tables = soup.find_all("table")
+        
+        rows = [[cell.text.strip() for cell in row.find_all('td')] for row in tables[0].find_all('tr')]
+        
+        if not rows[0]:
+            rows.pop(0)
+            if not rows:
+                raise(ValueError(f"Season data unavailable for: {season_string}"))
+        self.salary_df = pd.DataFrame(rows[1:], columns=rows[0])
+        self.salary_df["Season"] = self.salary_df.columns[1].replace("/", "_")
+        self.salary_df.columns = ["Player", "Salary", "Adjusted Salary", "Season"]
 
         return self.salary_df
 
@@ -429,5 +432,5 @@ class Team:
 
 if __name__ == "__main__":
     team_name = "MIL"
-    team = Team(team_name, season_year="2020", playoffs=True)
+    team = Team(team_name, season_year="2024", playoffs=True)
     print(team.get_salary())
