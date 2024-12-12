@@ -1,10 +1,18 @@
-[tool.poetry]
+[project]
 name = "nbastatpy"
 version = "0.1.6"
 description = "An easy-to-use wrapper for nba_api to easily find data for a player, game, team, or season"
-authors = []
-maintainers = ["Anthony Berghammer <aberghammer.analytics@gmail.com>"]
 readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "bs4>=0.0.2",
+    "loguru>=0.7.3",
+    "nba-api>=1.6.1",
+    "pandas>=2.2.3",
+    "pillow>=11.0.0",
+    "requests>=2.32.3",
+    "rich>=13.9.4",
+]
 repository = "https://github.com/aberghammer-analytics/NBAStatPy"
 documentation = "https://github.com/aberghammer-analytics/NBAStatPy/blob/main/README.md"
 keywords = ["basketball", "data", "nba", "sports", "stats"]
@@ -18,19 +26,9 @@ exclude = [
     ".vscode",
 ]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-pandas = "^2.2.2"
-nba_api = "^1.4.1"
-pillow = "^10.3.0"
-requests = "^2.31.0"
-loguru = "^0.7.2"
-rich = "^13.7.1"
-bs4 = "^0.0.2"
-
-[tool.poetry.group.dev.dependencies]
-black = "^24.4.2"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.uv]
+dev-dependencies = [
+    "black>=24.10.0",
+    "ipykernel>=6.29.5",
+    "ruff>=0.8.2",
+]
