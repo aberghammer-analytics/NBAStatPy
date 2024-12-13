@@ -13,18 +13,12 @@ dependencies = [
     "requests>=2.32.3",
     "rich>=13.9.4",
 ]
-repository = "https://github.com/aberghammer-analytics/NBAStatPy"
-documentation = "https://github.com/aberghammer-analytics/NBAStatPy/blob/main/README.md"
 keywords = ["basketball", "data", "nba", "sports", "stats"]
 classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
 ]
-exclude = [
-    ".scratch/",
-    ".venv/",
-    ".vscode",
-]
+
 
 [tool.uv]
 dev-dependencies = [
