@@ -1,14 +1,17 @@
-name: Lint
+name: Security Scan
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    # Run weekly on Mondays at 8am UTC
+    - cron: '0 8 * * 1'
   workflow_dispatch:
 
 jobs:
-  ruff:
+  safety:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,8 +29,12 @@ jobs:
       - name: Install the project
         run: uv sync --all-extras --dev
 
-      - name: Run Ruff linter
-        run: uv run ruff check --output-format=github .
+      - name: Run Safety check
+        run: uv run safety check --json
+        continue-on-error: true
 
-      - name: Run Ruff formatter check
-        run: uv run ruff format --check .
+      - name: Run pip-audit
+        run: |
+          uv pip install pip-audit
+          uv run pip-audit --format json
+        continue-on-error: true

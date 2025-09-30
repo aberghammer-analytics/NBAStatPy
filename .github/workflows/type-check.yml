@@ -1,4 +1,4 @@
-name: Run Pytest
+name: Type Check
 
 on:
   push:
@@ -8,12 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  mypy:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.10", "3.11", "3.12"]
 
     steps:
       - uses: actions/checkout@v4
@@ -21,14 +17,14 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.10"
           cache: 'pip'
 
       - name: Install the project
         run: uv sync --all-extras --dev
 
-      - name: Run tests with coverage
-        run: uv run pytest tests --cov=src/nbastatpy --cov-report=html --cov-report=term-missing
+      - name: Run mypy
+        run: uv run mypy src/nbastatpy --config-file mypy.ini
