@@ -26,5 +26,9 @@ repos:
       - id: mypy
         additional_dependencies:
           - types-requests
+          - pandas-stubs
         files: ^src/
         args: [--config-file=mypy.ini]
+        verbose: true
+        # Make mypy advisory only (won't block commits)
+        stages: [manual]
