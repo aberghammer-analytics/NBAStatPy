@@ -59,10 +59,9 @@ class Player:
         if playoffs:
             self.season_type = "Playoffs"
 
-
     def get_common_info(self) -> pd.DataFrame:
         """Gets common info like height, weight, draft_year, etc. and sets as class attr
-        
+
         Returns:
             pd.DataFrame: A DataFrame containing the common information of the player.
         """
@@ -88,23 +87,32 @@ class Player:
         tables = soup.find_all("table")
         if len(tables) > 1:
             # Get the table rows
-            rows = [[cell.text.strip() for cell in row.find_all('td')] for row in tables[0].find_all('tr')]
+            rows = [
+                [cell.text.strip() for cell in row.find_all("td")]
+                for row in tables[0].find_all("tr")
+            ]
 
-            rows2 = [[cell.text.strip() for cell in row.find_all('td')] for row in tables[1].find_all('tr')]
-            
+            rows2 = [
+                [cell.text.strip() for cell in row.find_all("td")]
+                for row in tables[1].find_all("tr")
+            ]
+
             projected = pd.DataFrame(rows[1:], columns=rows[0])
             projected["Team"] = projected.columns[1]
-            projected = projected.rename(columns={projected.columns[1]:"Salary"})
+            projected = projected.rename(columns={projected.columns[1]: "Salary"})
             projected["Salary_Type"] = "Projected"
-            
+
             historical = pd.DataFrame(rows2[1:], columns=rows2[0])
             historical["Salary_Type"] = "Historical"
-            
+
             self.salary_df = pd.concat([projected, historical])
-            
+
         else:
             # Get the table rows
-            rows = [[cell.text.strip() for cell in row.find_all('td')] for row in tables[0].find_all('tr')]
+            rows = [
+                [cell.text.strip() for cell in row.find_all("td")]
+                for row in tables[0].find_all("tr")
+            ]
             self.salary_df = pd.DataFrame(rows[1:], columns=rows[0])
 
         return self.salary_df
@@ -164,7 +172,6 @@ class Player:
         return self.game_splits
 
     def get_shooting_splits(self) -> pd.DataFrame:
-
         self.shooting_splits = pd.concat(
             nba.PlayerDashboardByShootingSplits(
                 self.id,
@@ -228,7 +235,7 @@ class Player:
         Retrieves the matchups data for the player.
 
         Args:
-            defense (bool, optional): If True, retrieves the defensive matchups data. 
+            defense (bool, optional): If True, retrieves the defensive matchups data.
                 If False, retrieves the offensive matchups data. Defaults to False.
 
         Returns:

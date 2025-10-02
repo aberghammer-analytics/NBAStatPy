@@ -11,12 +11,12 @@ from nbastatpy.utils import Formatter, PlayTypes
 
 class Team:
     def __init__(
-            self,
-            team_abbreviation: str,
-            season_year: str = None,
-            playoffs=False,
-            permode: str = "PerGame",
-        ):
+        self,
+        team_abbreviation: str,
+        season_year: str = None,
+        playoffs=False,
+        permode: str = "PerGame",
+    ):
         """
         Initializes a Team object.
 
@@ -91,13 +91,16 @@ class Team:
         result = requests.get(self.salary_url)
         soup = BeautifulSoup(result.content, features="html.parser")
         tables = soup.find_all("table")
-        
-        rows = [[cell.text.strip() for cell in row.find_all('td')] for row in tables[0].find_all('tr')]
-        
+
+        rows = [
+            [cell.text.strip() for cell in row.find_all("td")]
+            for row in tables[0].find_all("tr")
+        ]
+
         if not rows[0]:
             rows.pop(0)
             if not rows:
-                raise(ValueError(f"Season data unavailable for: {season_string}"))
+                raise (ValueError(f"Season data unavailable for: {season_string}"))
         self.salary_df = pd.DataFrame(rows[1:], columns=rows[0])
         self.salary_df["Season"] = self.salary_df.columns[1].replace("/", "_")
         self.salary_df.columns = ["Player", "Salary", "Adjusted Salary", "Season"]

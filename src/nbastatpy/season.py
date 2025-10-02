@@ -48,15 +48,18 @@ class Season:
         result = requests.get(url)
         soup = BeautifulSoup(result.content, features="html.parser")
         tables = soup.find_all("table")[0]
-        
+
         # # Get the table rows
-        rows = [[cell.text.strip() for cell in row.find_all('td')] for row in tables.find_all('tr')]
+        rows = [
+            [cell.text.strip() for cell in row.find_all("td")]
+            for row in tables.find_all("tr")
+        ]
 
         self.salary_df = pd.DataFrame(rows[1:], columns=rows[0])
-        if '' in self.salary_df.columns:
+        if "" in self.salary_df.columns:
             self.salary_df = self.salary_df.drop(columns=[""])
-            
-        self.salary_df['Season'] = self.salary_df.columns[1].replace("/", "_")
+
+        self.salary_df["Season"] = self.salary_df.columns[1].replace("/", "_")
         self.salary_df.columns = ["Player", "Salary", "Adj_Salary", "Season"]
 
         return self.salary_df
@@ -331,7 +334,6 @@ class Season:
         else:
             df_list = []
             for play in track(self.play_type):
-
                 temp_df = nba.SynergyPlayTypes(
                     season=self.season,
                     per_mode_simple=self.permode,
@@ -429,7 +431,6 @@ class Season:
         else:
             df_list = []
             for play in track(self.play_type):
-
                 temp_df = nba.LeagueDashPtStats(
                     season=self.season,
                     per_mode_simple=self.permode,
@@ -471,7 +472,6 @@ class Season:
         else:
             df_list = []
             for play in track(self.play_type):
-
                 temp_df = nba.LeagueDashPtStats(
                     season=self.season,
                     per_mode_simple=self.permode,
@@ -515,7 +515,6 @@ class Season:
         else:
             df_list = []
             for play in track(self.play_type):
-
                 temp_df = nba.LeagueDashPtDefend(
                     season=self.season,
                     per_mode_simple=self.permode,
@@ -557,7 +556,6 @@ class Season:
         else:
             df_list = []
             for play in track(self.play_type):
-
                 temp_df = nba.LeagueDashPtTeamDefend(
                     season=self.season,
                     per_mode_simple=self.permode,
