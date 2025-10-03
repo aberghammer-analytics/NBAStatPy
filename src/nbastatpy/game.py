@@ -3,6 +3,7 @@ from typing import List
 import nba_api.stats.endpoints as nba
 import pandas as pd
 
+from nbastatpy.standardize import standardize_dataframe
 from nbastatpy.utils import Formatter
 
 
@@ -15,13 +16,21 @@ class Game:
         """
         self.game_id = Formatter.format_game_id(game_id)
 
-    def get_boxscore(self) -> List[pd.DataFrame]:
+    def get_boxscore(self, standardize: bool = False) -> List[pd.DataFrame]:
         """Gets traditional boxscore
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             List[pd.DataFrame]: list of dataframes (players, starters/bench, team)
         """
-        self.boxscore = nba.BoxScoreTraditionalV3(self.game_id).get_data_frames()
+        dfs = nba.BoxScoreTraditionalV3(self.game_id).get_data_frames()
+
+        if standardize:
+            dfs = [standardize_dataframe(df, data_type="game") for df in dfs]
+
+        self.boxscore = dfs
         return self.boxscore
 
     def get_advanced(self):
@@ -124,14 +133,22 @@ class Game:
         )
         return self.rotations
 
-    def get_playbyplay(self) -> pd.DataFrame:
+    def get_playbyplay(self, standardize: bool = False) -> pd.DataFrame:
         """
         Retrieves the play-by-play data for the game.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pd.DataFrame: The play-by-play data as a pandas DataFrame.
         """
-        self.playbyplay = nba.PlayByPlayV3(self.game_id).get_data_frames()[0]
+        df = nba.PlayByPlayV3(self.game_id).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(df, data_type="game")
+
+        self.playbyplay = df
         return self.playbyplay
 
     def get_win_probability(self) -> pd.DataFrame:

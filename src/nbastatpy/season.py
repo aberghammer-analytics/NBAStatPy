@@ -6,6 +6,7 @@ import requests
 from bs4 import BeautifulSoup
 from rich.progress import track
 
+from nbastatpy.standardize import standardize_dataframe
 from nbastatpy.utils import Formatter, PlayTypes
 
 
@@ -149,18 +150,31 @@ class Season:
         ).get_data_frames()[0]
         return self.player_shot_locations
 
-    def get_player_stats(self):
+    def get_player_stats(self, standardize: bool = False):
         """
         Retrieves the player statistics for the specified season.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pandas.DataFrame: A DataFrame containing the player statistics.
         """
-        self.player_stats = nba.LeagueDashPlayerStats(
+        df = nba.LeagueDashPlayerStats(
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
         ).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="season",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.player_stats = df
         return self.player_stats
 
     def get_team_clutch(self):
@@ -219,18 +233,31 @@ class Season:
         ).get_data_frames()[0]
         return self.team_stats
 
-    def get_player_games(self) -> pd.DataFrame:
+    def get_player_games(self, standardize: bool = False) -> pd.DataFrame:
         """
         Retrieves the player games data for the specified season, season type, and per mode.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pd.DataFrame: A DataFrame containing the player games data.
         """
-        self.player_games = nba.PlayerGameLogs(
+        df = nba.PlayerGameLogs(
             season_nullable=self.season,
             season_type_nullable=self.season_type,
             per_mode_simple_nullable=self.permode,
         ).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="season",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.player_games = df
         return self.player_games
 
     def get_team_games(self):

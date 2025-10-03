@@ -43,3 +43,68 @@ player.get_awards()
 This returns a pandas dataframe with the awards won by the player each year.
 
 There are a lot of endpoints and various arguments for more complex queries like tracking and synergy datasets.
+
+## Data Standardization
+
+NBAStatPy includes built-in data standardization to ensure consistency across all datasets. This feature:
+
+- **Standardizes IDs**: Ensures player_id, team_id, and game_id are zero-padded to 10 digits
+- **Normalizes column names**: Converts all column names to lowercase with consistent naming
+- **Parses dates**: Properly converts date fields to date objects
+- **Converts time formats**: Transforms minutes:seconds format to total seconds
+- **Adds metadata**: Optionally includes season_id, is_playoffs flag, and timestamps
+- **Validates data**: Checks data types, ranges, and completeness
+
+### Using Standardization
+
+Simply add `standardize=True` to any `get_*` method:
+
+```python
+from nbastatpy.player import Player
+
+player = Player("Giannis", season="2023", playoffs=False)
+
+# Get standardized player stats
+stats = player.get_common_info(standardize=True)
+
+# Player IDs are now zero-padded to 10 digits
+# Column names are lowercase
+# Height is converted to total inches
+# Dates are properly parsed
+```
+
+### Standalone Standardization
+
+You can also standardize any DataFrame directly:
+
+```python
+from nbastatpy.standardize import standardize_dataframe
+
+# Standardize player data
+df = standardize_dataframe(df, data_type='player')
+
+# Standardize season data with context
+df = standardize_dataframe(
+    df,
+    data_type='season',
+    season='2023-24',
+    playoffs=True
+)
+```
+
+### Data Validation
+
+Validate your standardized data:
+
+```python
+from nbastatpy.validators import validate_dataframe
+
+result = validate_dataframe(
+    df,
+    required_columns={'player_id', 'team_id'},
+    range_rules={'age': (15, 50), 'pts': (0, 100)}
+)
+
+if not result.passed:
+    print(result)  # Shows errors and warnings
+```
