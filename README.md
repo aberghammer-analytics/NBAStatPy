@@ -6,7 +6,7 @@
 
 ## Overview
 
-This is an easy-to-use wrapper for the `nba_api` package. The goal is to be able to easily access and find data for a player, game, team, or season. 
+This is an easy-to-use wrapper for the `nba_api` package. The goal is to be able to easily access and find data for a player, game, team, or season.
 
 The data is accessed through a class based on how you're searching for it. A quickstart example is shown below. Currently there are 4 classes:
 
@@ -27,8 +27,8 @@ Then you build a player using either an ID from stats.nba.com or the player's na
 
 ```{python}
 player = Player(
-    "Giannis", 
-    season="2020", 
+    "Giannis",
+    season="2020",
     playoffs=True,
     permode="PerGame"
 )
