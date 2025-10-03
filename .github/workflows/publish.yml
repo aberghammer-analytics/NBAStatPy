@@ -1,8 +1,9 @@
-name: Upload Python Package to PyPI when a Release is Created
+name: Publish to PyPI
 
 on:
   release:
     types: [created]
+  workflow_dispatch:
 
 jobs:
   pypi-publish:
@@ -13,19 +14,26 @@ jobs:
       url: https://pypi.org/p/nbastatpy
     permissions:
       id-token: write
+
     steps:
       - uses: actions/checkout@v4
+
       - name: Install uv
         uses: astral-sh/setup-uv@v4
 
-      - name: "Set up Python"
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version-file: "pyproject.toml"
+          python-version: "3.10"
+
       - name: Install the project
         run: uv sync --all-extras --dev
+
+      - name: Run tests before publishing
+        run: uv run pytest tests
+
       - name: Build package
-        run: |
-          uv build
+        run: uv build
+
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

@@ -4,7 +4,6 @@ import pandas as pd
 
 
 class PlayTypes:
-
     PERMODE = {
         "PERGAME": "PerGame",
         "PER36": "Per36",
@@ -68,7 +67,6 @@ class PlayTypes:
 
 
 class Formatter:
-
     def get_current_season_year() -> str:
         current_datetime = datetime.now()
         current_season_year = current_datetime.year
@@ -86,7 +84,6 @@ class Formatter:
         return next(value for value in row if pd.notna(value))
 
     def check_playtype(play: str, playtypes: dict) -> str:
-
         play = play.replace("_", "").replace("-", "").upper()
 
         if play == "ALL":
