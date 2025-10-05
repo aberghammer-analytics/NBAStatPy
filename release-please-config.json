@@ -1,0 +1,12 @@
+{
+  "packages": {
+    ".": {
+      "release-type": "python",
+      "package-name": "nbastatpy",
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        "pyproject.toml"
+      ]
+    }
+  }
+}
