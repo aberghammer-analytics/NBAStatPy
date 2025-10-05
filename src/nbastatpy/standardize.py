@@ -80,31 +80,31 @@ class DataStandardizer:
 
     def standardize_types(self) -> None:
         """Convert columns to appropriate data types."""
-        # Integer columns
+        # Integer columns - try int first, fall back to float if needed
         for col in ColumnTypes.INTEGER_COLUMNS:
             if col in self.df.columns:
-                try:
-                    self.df[col] = pd.to_numeric(self.df[col], errors="coerce").astype(
-                        "Int64"
-                    )
-                except Exception as e:
-                    logger.warning(f"Could not convert {col} to integer: {e}")
+                # Convert to numeric, coercing errors to NaN
+                numeric_col = pd.to_numeric(self.df[col], errors="coerce")
+
+                # Check if all non-null values are integers
+                if numeric_col.notna().any():
+                    non_null = numeric_col.dropna()
+                    if (non_null == non_null.astype(int)).all():
+                        # All values are integers, use Int64
+                        self.df[col] = numeric_col.astype("Int64")
+                    else:
+                        # Has decimal values, use float
+                        self.df[col] = numeric_col
 
         # Float columns
         for col in ColumnTypes.FLOAT_COLUMNS:
             if col in self.df.columns:
-                try:
-                    self.df[col] = pd.to_numeric(self.df[col], errors="coerce")
-                except Exception as e:
-                    logger.warning(f"Could not convert {col} to float: {e}")
+                self.df[col] = pd.to_numeric(self.df[col], errors="coerce")
 
         # String columns
         for col in ColumnTypes.STRING_COLUMNS:
             if col in self.df.columns:
-                try:
-                    self.df[col] = self.df[col].astype(str)
-                except Exception as e:
-                    logger.warning(f"Could not convert {col} to string: {e}")
+                self.df[col] = self.df[col].astype(str)
 
     def add_metadata_fields(self) -> None:
         """Add metadata fields like standardization timestamp."""
@@ -126,6 +126,8 @@ class PlayerDataStandardizer(DataStandardizer):
         # Player-specific transformations
         self.convert_height()
         self.parse_birthdate()
+        self.standardize_weight()
+        self.standardize_position()
 
         return self.df
 
@@ -161,6 +163,58 @@ class PlayerDataStandardizer(DataStandardizer):
             except Exception as e:
                 logger.warning(f"Could not parse birthdate: {e}")
 
+    def standardize_weight(self) -> None:
+        """Standardize weight to numeric pounds."""
+        for weight_field in SpecialFields.WEIGHT_FIELDS:
+            if weight_field in self.df.columns:
+                try:
+                    # Remove any text and convert to numeric
+                    self.df[weight_field] = (
+                        pd.to_numeric(
+                            self.df[weight_field].astype(str).str.extract(r"(\d+)")[0],
+                            errors="coerce",
+                        )
+                        .fillna(0)
+                        .astype("Int64")
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Could not standardize weight field {weight_field}: {e}"
+                    )
+
+    def standardize_position(self) -> None:
+        """Standardize position abbreviations."""
+        position_fields = ["position", "pos", "player_position"]
+        for pos_field in position_fields:
+            if pos_field in self.df.columns:
+                try:
+
+                    def clean_position(pos):
+                        if pd.isna(pos):
+                            return None
+                        pos_str = str(pos).upper().strip()
+                        # Standardize common variations
+                        position_map = {
+                            "GUARD": "G",
+                            "FORWARD": "F",
+                            "CENTER": "C",
+                            "POINT GUARD": "PG",
+                            "SHOOTING GUARD": "SG",
+                            "SMALL FORWARD": "SF",
+                            "POWER FORWARD": "PF",
+                            "G-F": "GF",
+                            "F-G": "FG",
+                            "F-C": "FC",
+                            "C-F": "CF",
+                        }
+                        return position_map.get(pos_str, pos_str)
+
+                    self.df[pos_field] = self.df[pos_field].apply(clean_position)
+                except Exception as e:
+                    logger.warning(
+                        f"Could not standardize position field {pos_field}: {e}"
+                    )
+
 
 class GameDataStandardizer(DataStandardizer):
     """Standardizer for game-specific data."""
@@ -178,6 +232,8 @@ class GameDataStandardizer(DataStandardizer):
         self.convert_minutes_to_seconds()
         self.convert_matchup_time()
         self.convert_clock_time()
+        self.parse_matchup_string()
+        self.standardize_wl()
 
         return self.df
 
@@ -248,6 +304,64 @@ class GameDataStandardizer(DataStandardizer):
                 self.df["clock_seconds"] = self.df["clock"].apply(parse_clock)
             except Exception as e:
                 logger.warning(f"Could not convert clock time: {e}")
+
+    def parse_matchup_string(self) -> None:
+        """Parse matchup strings like 'TOR @ BOS' into home/away teams."""
+        for matchup_field in SpecialFields.MATCHUP_FIELDS:
+            if matchup_field in self.df.columns:
+                try:
+
+                    def extract_teams(matchup_str):
+                        if pd.isna(matchup_str) or matchup_str == "":
+                            return None, None
+                        parts = str(matchup_str).split()
+                        if len(parts) >= 3:
+                            if "@" in parts:
+                                idx = parts.index("@")
+                                away_team = parts[idx - 1] if idx > 0 else None
+                                home_team = parts[idx + 1] if idx < len(parts) - 1 else None
+                                return away_team, home_team
+                            elif "vs." in parts or "vs" in parts:
+                                vs_idx = (
+                                    parts.index("vs.")
+                                    if "vs." in parts
+                                    else parts.index("vs")
+                                )
+                                home_team = parts[vs_idx - 1] if vs_idx > 0 else None
+                                away_team = (
+                                    parts[vs_idx + 1]
+                                    if vs_idx < len(parts) - 1
+                                    else None
+                                )
+                                return away_team, home_team
+                        return None, None
+
+                    # Extract home and away teams
+                    teams = self.df[matchup_field].apply(extract_teams)
+                    self.df["away_team"] = teams.apply(lambda x: x[0] if x else None)
+                    self.df["home_team"] = teams.apply(lambda x: x[1] if x else None)
+                except Exception as e:
+                    logger.warning(f"Could not parse matchup field {matchup_field}: {e}")
+
+    def standardize_wl(self) -> None:
+        """Standardize win/loss indicator fields to consistent format."""
+        for wl_field in SpecialFields.WL_FIELDS:
+            if wl_field in self.df.columns:
+                try:
+
+                    def standardize_outcome(val):
+                        if pd.isna(val):
+                            return None
+                        val_str = str(val).upper().strip()
+                        if val_str in ["W", "WIN", "WON", "1", "TRUE"]:
+                            return "W"
+                        elif val_str in ["L", "LOSS", "LOST", "0", "FALSE"]:
+                            return "L"
+                        return val_str
+
+                    self.df[wl_field] = self.df[wl_field].apply(standardize_outcome)
+                except Exception as e:
+                    logger.warning(f"Could not standardize W/L field {wl_field}: {e}")
 
 
 class SeasonDataStandardizer(DataStandardizer):

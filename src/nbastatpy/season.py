@@ -12,21 +12,25 @@ from nbastatpy.utils import Formatter, PlayTypes
 
 class Season:
     def __init__(
-        self, season_year: str = None, playoffs=False, permode: str = "PERGAME"
+        self, season_year=None, playoffs=False, permode: str = "PERGAME"
     ):
         """
         Initialize a Season object.
 
         Args:
-            season_year (str, optional): The year of the season. Defaults to None.
+            season_year (int | str, optional): The year of the season. Can be provided in various formats:
+                - 4-digit year: 2022, "2022" -> 2022-23 season
+                - 2-digit year: 22, "22" -> 2022-23 season
+                - Full season string: "2022-23" -> 2022-23 season
+                Defaults to current season if None.
             playoffs (bool, optional): Indicates if the season is for playoffs. Defaults to False.
             permode (str, optional): The per mode for the season. Defaults to "PERGAME".
         """
         self.permode = PlayTypes.PERMODE[
             permode.replace("_", "").replace("-", "").upper()
         ]
-        if season_year:
-            self.season_year = season_year
+        if season_year is not None:
+            self.season_year = Formatter.normalize_season_year(season_year)
         else:
             self.season_year = Formatter.get_current_season_year()
 
@@ -65,89 +69,167 @@ class Season:
 
         return self.salary_df
 
-    def get_lineups(self):
+    def get_lineups(self, standardize: bool = False):
         """
         Retrieves the lineups data for the specified season, season type, and per mode.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pandas.DataFrame: The lineups data for the specified season, season type, and per mode.
         """
-        self.lineups = nba.LeagueDashLineups(
+        df = nba.LeagueDashLineups(
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
         ).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="season",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.lineups = df
         return self.lineups
 
-    def get_lineup_details(self):
+    def get_lineup_details(self, standardize: bool = False):
         """
         Retrieves the lineup details for the specified season.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pandas.DataFrame: The lineup details for the specified season.
         """
-        self.lineup_details = nba.LeagueLineupViz(
+        df = nba.LeagueLineupViz(
             season=self.season,
             season_type_all_star=self.season_type,
             minutes_min=1,
             per_mode_detailed=self.permode,
         ).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="season",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.lineup_details = df
         return self.lineup_details
 
-    def get_opponent_shooting(self):
+    def get_opponent_shooting(self, standardize: bool = False):
         """
         Retrieves the opponent shooting statistics for the specified season.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pandas.DataFrame: The opponent shooting statistics for the season.
         """
-        self.opponent_shooting = nba.LeagueDashOppPtShot(
+        df = nba.LeagueDashOppPtShot(
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_simple=self.permode,
         ).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="season",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.opponent_shooting = df
         return self.opponent_shooting
 
-    def get_player_clutch(self):
+    def get_player_clutch(self, standardize: bool = False):
         """
         Retrieves the player clutch data for the specified season.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pandas.DataFrame: The player clutch data for the specified season.
         """
-        self.player_clutch = nba.LeagueDashPlayerClutch(
+        df = nba.LeagueDashPlayerClutch(
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
         ).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="season",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.player_clutch = df
         return self.player_clutch
 
-    def get_player_shots(self):
+    def get_player_shots(self, standardize: bool = False):
         """
         Retrieves the player shots data for the specified season, season type, and per mode.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pandas.DataFrame: The player shots data.
         """
-        self.player_shots = nba.LeagueDashPlayerPtShot(
+        df = nba.LeagueDashPlayerPtShot(
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_simple=self.permode,
         ).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="season",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.player_shots = df
         return self.player_shots
 
-    def get_player_shot_locations(self):
+    def get_player_shot_locations(self, standardize: bool = False):
         """
         Retrieves the shot locations data for the players in the specified season.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pandas.DataFrame: A DataFrame containing the shot locations data for the players.
         """
-        self.player_shot_locations = nba.LeagueDashPlayerShotLocations(
+        df = nba.LeagueDashPlayerShotLocations(
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
         ).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="season",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.player_shot_locations = df
         return self.player_shot_locations
 
     def get_player_stats(self, standardize: bool = False):
@@ -177,60 +259,112 @@ class Season:
         self.player_stats = df
         return self.player_stats
 
-    def get_team_clutch(self):
+    def get_team_clutch(self, standardize: bool = False):
         """
         Retrieves the clutch statistics for teams in the specified season.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pandas.DataFrame: A DataFrame containing the clutch statistics for teams.
         """
-        self.team_clutch = nba.LeagueDashTeamClutch(
+        df = nba.LeagueDashTeamClutch(
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
         ).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="season",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.team_clutch = df
         return self.team_clutch
 
-    def get_team_shots_bypoint(self):
+    def get_team_shots_bypoint(self, standardize: bool = False):
         """
         Retrieves the team shots by point data for the specified season.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pandas.DataFrame: The team shots by point data.
         """
-        self.team_shots_bypoint = nba.LeagueDashTeamPtShot(
+        df = nba.LeagueDashTeamPtShot(
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_simple=self.permode,
         ).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="season",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.team_shots_bypoint = df
         return self.team_shots_bypoint
 
-    def get_team_shot_locations(self):
+    def get_team_shot_locations(self, standardize: bool = False):
         """
         Retrieves the shot locations data for teams in a specific season.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pandas.DataFrame: The shot locations data for teams.
         """
-        self.team_shot_locations = nba.LeagueDashTeamShotLocations(
+        df = nba.LeagueDashTeamShotLocations(
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
         ).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="season",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.team_shot_locations = df
         return self.team_shot_locations
 
-    def get_team_stats(self):
+    def get_team_stats(self, standardize: bool = False):
         """
         Retrieves the team statistics for the specified season.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pandas.DataFrame: A DataFrame containing the team statistics.
         """
-        self.team_stats = nba.LeagueDashTeamStats(
+        df = nba.LeagueDashTeamStats(
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
         ).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="season",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.team_stats = df
         return self.team_stats
 
     def get_player_games(self, standardize: bool = False) -> pd.DataFrame:
@@ -260,71 +394,136 @@ class Season:
         self.player_games = df
         return self.player_games
 
-    def get_team_games(self):
+    def get_team_games(self, standardize: bool = False):
         """
         Retrieves the game log for a specific team in a given season.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pandas.DataFrame: The game log data for the team.
         """
-        self.team_games = nba.LeagueGameLog(
+        df = nba.LeagueGameLog(
             season=self.season,
             season_type_all_star=self.season_type,
             player_or_team_abbreviation="T",
         ).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="season",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.team_games = df
         return self.team_games
 
-    def get_player_hustle(self):
+    def get_player_hustle(self, standardize: bool = False):
         """
         Retrieves the hustle stats for players in the specified season and season type.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pandas.DataFrame: A DataFrame containing the player hustle stats.
         """
-        self.player_hustle = nba.LeagueHustleStatsPlayer(
+        df = nba.LeagueHustleStatsPlayer(
             season=self.season,
             season_type_all_star=self.season_type,
         ).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="season",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.player_hustle = df
         return self.player_hustle
 
-    def get_team_hustle(self):
+    def get_team_hustle(self, standardize: bool = False):
         """
         Retrieves the team hustle stats for the specified season and season type.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pandas.DataFrame: The team hustle stats for the specified season and season type.
         """
-        self.team_hustle = nba.LeagueHustleStatsTeam(
+        df = nba.LeagueHustleStatsTeam(
             season=self.season,
             season_type_all_star=self.season_type,
         ).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="season",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.team_hustle = df
         return self.team_hustle
 
-    def get_player_matchups(self):
+    def get_player_matchups(self, standardize: bool = False):
         """
         Retrieves the player matchups for the current season.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pandas.DataFrame: The player matchups data for the current season.
         """
-        self.player_matchups = nba.LeagueSeasonMatchups(
+        df = nba.LeagueSeasonMatchups(
             season=self.season,
             season_type_playoffs=self.season_type,
             per_mode_simple=self.permode,
         ).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="season",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.player_matchups = df
         return self.player_matchups
 
-    def get_player_estimated_metrics(self):
+    def get_player_estimated_metrics(self, standardize: bool = False):
         """
         Retrieves the estimated metrics for players in the specified season and season type.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pandas.DataFrame: A DataFrame containing the estimated metrics for players.
         """
-        self.player_estimated_metrics = nba.PlayerEstimatedMetrics(
+        df = nba.PlayerEstimatedMetrics(
             season=self.season,
             season_type=self.season_type,
         ).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="season",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.player_estimated_metrics = df
         return self.player_estimated_metrics
 
     def get_synergy_player(
