@@ -1,9 +1,10 @@
 name: Publish to PyPI
 
+# Triggered automatically by release-please when it creates a GitHub release
 on:
   release:
     types: [created]
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger option
 
 jobs:
   pypi-publish:

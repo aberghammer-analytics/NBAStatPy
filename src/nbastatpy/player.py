@@ -9,6 +9,7 @@ from nba_api.stats.endpoints import leaguegamefinder
 from nba_api.stats.static import players, teams
 from PIL import Image
 
+from nbastatpy.standardize import standardize_dataframe
 from nbastatpy.utils import Formatter, PlayTypes
 
 
@@ -59,20 +60,26 @@ class Player:
         if playoffs:
             self.season_type = "Playoffs"
 
-    def get_common_info(self) -> pd.DataFrame:
+    def get_common_info(self, standardize: bool = False) -> pd.DataFrame:
         """Gets common info like height, weight, draft_year, etc. and sets as class attr
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pd.DataFrame: A DataFrame containing the common information of the player.
         """
-        self.common_info = (
-            nba.CommonPlayerInfo(self.id).get_data_frames()[0].iloc[0].to_dict()
-        )
+        df = nba.CommonPlayerInfo(self.id).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(df, data_type="player")
+
+        self.common_info = df.iloc[0].to_dict()
 
         for attr_name, value in self.common_info.items():
             setattr(self, attr_name.lower(), self.common_info.get(attr_name, None))
 
-        return self.common_info
+        return df
 
     def get_salary(self) -> pd.DataFrame:
         """
@@ -129,15 +136,24 @@ class Player:
         self.headshot = Image.open(BytesIO(pic.content))
         return self.headshot
 
-    def get_season_career_totals(self) -> pd.DataFrame:
+    def get_season_career_totals(self, standardize: bool = False) -> pd.DataFrame:
         """Gets seasons and career data
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pd.DataFrame: 2 dataframes, season totals and career
         """
         df_list = nba.PlayerCareerStats(player_id=self.id).get_data_frames()
-        self.career_totals = df_list[1]
-        self.season_totals = df_list[0]
+
+        if standardize:
+            self.career_totals = standardize_dataframe(df_list[1], data_type="player")
+            self.season_totals = standardize_dataframe(df_list[0], data_type="player")
+        else:
+            self.career_totals = df_list[1]
+            self.season_totals = df_list[0]
+
         return self.season_totals, self.career_totals
 
     def get_splits(self) -> pd.DataFrame:
@@ -216,18 +232,31 @@ class Player:
         self.awards = nba.PlayerAwards(self.id).get_data_frames()[0]
         return self.awards
 
-    def get_games_boxscore(self) -> pd.DataFrame:
+    def get_games_boxscore(self, standardize: bool = False) -> pd.DataFrame:
         """
         Retrieves the boxscore data for the games played by the player.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pd.DataFrame: The boxscore data for the player's games.
         """
-        self.games_boxscore = leaguegamefinder.LeagueGameFinder(
+        df = leaguegamefinder.LeagueGameFinder(
             player_id_nullable=self.id,
             season_nullable=self.season,
             season_type_nullable=self.season_type,
         ).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="player",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.games_boxscore = df
         return self.games_boxscore
 
     def get_matchups(self, defense: bool = False) -> pd.DataFrame:

@@ -6,6 +6,7 @@ import requests
 from bs4 import BeautifulSoup
 from nba_api.stats.static import teams
 
+from nbastatpy.standardize import standardize_dataframe
 from nbastatpy.utils import Formatter, PlayTypes
 
 
@@ -63,17 +64,33 @@ class Team:
         self.logo = pic.content
         return self.logo
 
-    def get_roster(self) -> List[pd.DataFrame]:
+    def get_roster(self, standardize: bool = False) -> List[pd.DataFrame]:
         """
         Retrieves the roster of the team for the specified season.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             List[pd.DataFrame]: A list of pandas DataFrames containing the roster data.
         """
-        self.roster = nba.CommonTeamRoster(
+        dfs = nba.CommonTeamRoster(
             self.id,
             season=self.season,
         ).get_data_frames()
+
+        if standardize:
+            dfs = [
+                standardize_dataframe(
+                    df,
+                    data_type="team",
+                    season=self.season,
+                    playoffs=(self.season_type == "Playoffs"),
+                )
+                for df in dfs
+            ]
+
+        self.roster = dfs
         return self.roster
 
     def get_salary(self) -> pd.DataFrame:
@@ -272,22 +289,35 @@ class Team:
 
         return self.player_shot_locations
 
-    def get_player_stats(self) -> pd.DataFrame:
+    def get_player_stats(self, standardize: bool = False) -> pd.DataFrame:
         """
         Retrieves the player statistics for the team.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pd.DataFrame: A DataFrame containing the player statistics.
         """
-        self.player_stats = nba.LeagueDashPlayerStats(
+        df = nba.LeagueDashPlayerStats(
             team_id_nullable=self.id,
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
         ).get_data_frames()[0]
-        self.player_stats["season"] = self.season
-        self.player_stats["season_type"] = self.season_type
 
+        df["season"] = self.season
+        df["season_type"] = self.season_type
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="team",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.player_stats = df
         return self.player_stats
 
     def get_player_point_defend(self) -> pd.DataFrame:

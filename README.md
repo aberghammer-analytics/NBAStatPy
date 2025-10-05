@@ -6,40 +6,71 @@
 
 ## Overview
 
-This is an easy-to-use wrapper for the `nba_api` package. The goal is to be able to easily access and find data for a player, game, team, or season.
+A simple, easy-to-use wrapper for the `nba_api` package to access NBA data for players, games, teams, and seasons.
 
-The data is accessed through a class based on how you're searching for it. A quickstart example is shown below. Currently there are 4 classes:
+## Quick Start
 
-- `Game`
-- `Player`
-- `Season`
-- `Team`
-
-## Quickstart
-
-To get started you can import the class that represents the data you're searching for.
-
-```{python}
+```python
 from nbastatpy.player import Player
+
+# Create a player object
+player = Player("Giannis", season="2023", playoffs=True)
+
+# Get data
+awards = player.get_awards()
+stats = player.get_career_stats()
 ```
 
-Then you build a player using either an ID from stats.nba.com or the player's name. When you're building the player object you can add additional search data like season, data format, or playoffs vs. regular season.
+## Main Classes
 
-```{python}
-player = Player(
-    "Giannis",
-    season="2020",
-    playoffs=True,
-    permode="PerGame"
-)
+- **Player** - Access player stats, career data, and awards
+- **Game** - Get boxscores, play-by-play, and game details
+- **Season** - Query league-wide stats, lineups, and tracking data
+- **Team** - Retrieve team rosters, stats, and splits
+
+## Data Standardization
+
+Add `standardize=True` to any method to get clean, analysis-ready data:
+
+```python
+# Standardized output
+player = Player("LeBron James")
+info = player.get_common_info(standardize=True)
+
+# Benefits:
+# ✓ Lowercase column names
+# ✓ Zero-padded IDs (player_id: "0000002544")
+# ✓ Proper data types (Int64, Float64, date objects)
+# ✓ Height in inches, time in seconds
+# ✓ Parsed matchups and cleaned fields
 ```
 
-Once you have the player object, you can get different datasets based on the criteria. For instance, you can get the awards the player has won by doing the following:
+### What Gets Standardized
 
-```{python}
-player.get_awards()
+- **IDs**: Zero-padded to 10 digits
+- **Columns**: Lowercase with consistent naming
+- **Dates**: Converted to date objects
+- **Time**: MM:SS → total seconds
+- **Height**: "6-11" → 83 inches
+- **Matchups**: "TOR @ BOS" → away_team, home_team
+- **Types**: Integers, floats, and strings properly typed
+
+### Standalone Usage
+
+```python
+from nbastatpy.standardize import standardize_dataframe
+
+df = standardize_dataframe(df, data_type='player')
 ```
 
-This returns a pandas dataframe with the awards won by the player each year.
+## Installation
 
-There are a lot of endpoints and various arguments for more complex queries like tracking and synergy datasets.
+### Pip
+```bash
+pip install nbastatpy
+```
+
+### UV
+```bash
+uv add nbastatpy
+```
