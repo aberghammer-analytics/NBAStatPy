@@ -11,9 +11,7 @@ from nbastatpy.utils import Formatter, PlayTypes
 
 
 class Season:
-    def __init__(
-        self, season_year=None, playoffs=False, permode: str = "PERGAME"
-    ):
+    def __init__(self, season_year=None, playoffs=False, permode: str = "PERGAME"):
         """
         Initialize a Season object.
 

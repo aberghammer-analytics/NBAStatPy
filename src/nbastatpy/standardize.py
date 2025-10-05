@@ -319,7 +319,9 @@ class GameDataStandardizer(DataStandardizer):
                             if "@" in parts:
                                 idx = parts.index("@")
                                 away_team = parts[idx - 1] if idx > 0 else None
-                                home_team = parts[idx + 1] if idx < len(parts) - 1 else None
+                                home_team = (
+                                    parts[idx + 1] if idx < len(parts) - 1 else None
+                                )
                                 return away_team, home_team
                             elif "vs." in parts or "vs" in parts:
                                 vs_idx = (
@@ -341,7 +343,9 @@ class GameDataStandardizer(DataStandardizer):
                     self.df["away_team"] = teams.apply(lambda x: x[0] if x else None)
                     self.df["home_team"] = teams.apply(lambda x: x[1] if x else None)
                 except Exception as e:
-                    logger.warning(f"Could not parse matchup field {matchup_field}: {e}")
+                    logger.warning(
+                        f"Could not parse matchup field {matchup_field}: {e}"
+                    )
 
     def standardize_wl(self) -> None:
         """Standardize win/loss indicator fields to consistent format."""
