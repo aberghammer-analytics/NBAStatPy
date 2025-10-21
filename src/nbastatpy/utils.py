@@ -107,6 +107,45 @@ class Formatter:
     def format_season(season_year: int) -> str:
         return "{}-{}".format(int(season_year), str(int(season_year) + 1)[2:])
 
+    def format_season_id(season_input) -> str:
+        """
+        Convert any season format to YYYYYYYY format (8 digits representing two years).
+
+        Args:
+            season_input: Can be int, str. Examples: 2022, "2022", "2022-23", "22-23", 20222023
+
+        Returns:
+            str: 8-digit season ID (e.g., "20222023" for 2022-23 season)
+
+        Examples:
+            >>> Formatter.format_season_id(2022)
+            "20222023"
+            >>> Formatter.format_season_id("2022-23")
+            "20222023"
+            >>> Formatter.format_season_id(20222023)
+            "20222023"
+        """
+        season_str = str(season_input).strip()
+
+        # Already in YYYYYYYY format
+        if len(season_str) == 8 and season_str.isdigit():
+            return season_str
+
+        # Handle formats with hyphen (e.g., "2022-23" or "22-23")
+        if "-" in season_str:
+            parts = season_str.split("-")
+            first_year = Formatter.normalize_season_year(parts[0])
+            # Second part could be 2-digit or 4-digit
+            if len(parts[1]) == 2:
+                second_year = first_year + 1
+            else:
+                second_year = int(parts[1])
+            return f"{first_year}{second_year}"
+
+        # Single year input - assume it's the starting year
+        year = Formatter.normalize_season_year(season_input)
+        return f"{year}{year + 1}"
+
     def format_game_id(game_id) -> str:
         return str(game_id).zfill(10)
 

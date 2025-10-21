@@ -11,6 +11,7 @@ from nbastatpy.config import (
     SpecialFields,
     TimeFields,
 )
+from nbastatpy.utils import Formatter
 
 
 class DataStandardizer:
@@ -34,6 +35,7 @@ class DataStandardizer:
         """
         self.lowercase_columns()
         self.standardize_ids()
+        self.standardize_season_ids()
         self.standardize_dates()
         self.standardize_types()
 
@@ -65,6 +67,16 @@ class DataStandardizer:
                     )
                 except Exception as e:
                     logger.warning(f"Could not standardize ID field {id_field}: {e}")
+
+    def standardize_season_ids(self) -> None:
+        """Standardize season_id column to YYYYYYYY format (8 digits)."""
+        if "season_id" in self.df.columns:
+            try:
+                self.df["season_id"] = self.df["season_id"].apply(
+                    lambda x: Formatter.format_season_id(x) if pd.notna(x) else None
+                )
+            except Exception as e:
+                logger.warning(f"Could not standardize season_id column: {e}")
 
     def standardize_dates(self) -> None:
         """Parse and standardize date columns."""
@@ -114,6 +126,25 @@ class DataStandardizer:
 class PlayerDataStandardizer(DataStandardizer):
     """Standardizer for player-specific data."""
 
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        season: Optional[str] = None,
+        playoffs: bool = False,
+        add_metadata: bool = False,
+    ):
+        """Initialize the PlayerDataStandardizer.
+
+        Args:
+            df: The DataFrame to standardize
+            season: Season ID (e.g., '2023-24')
+            playoffs: Whether this is playoff data
+            add_metadata: Whether to add metadata fields
+        """
+        super().__init__(df, add_metadata)
+        self.season = season
+        self.playoffs = playoffs
+
     def standardize(self) -> pd.DataFrame:
         """Apply player-specific standardization steps.
 
@@ -128,6 +159,7 @@ class PlayerDataStandardizer(DataStandardizer):
         self.parse_birthdate()
         self.standardize_weight()
         self.standardize_position()
+        self.add_season_metadata()
 
         return self.df
 
@@ -215,9 +247,42 @@ class PlayerDataStandardizer(DataStandardizer):
                         f"Could not standardize position field {pos_field}: {e}"
                     )
 
+    def add_season_metadata(self) -> None:
+        """Add season_id in YYYYYYYY format if season is provided."""
+        if self.season:
+            season_id_value = Formatter.format_season_id(self.season)
+            if "season_id" not in self.df.columns:
+                self.df["season_id"] = season_id_value
+            else:
+                # Ensure existing season_id is in correct format
+                self.df["season_id"] = self.df["season_id"].apply(
+                    lambda x: Formatter.format_season_id(x)
+                    if pd.notna(x)
+                    else season_id_value
+                )
+
 
 class GameDataStandardizer(DataStandardizer):
     """Standardizer for game-specific data."""
+
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        season: Optional[str] = None,
+        playoffs: bool = False,
+        add_metadata: bool = False,
+    ):
+        """Initialize the GameDataStandardizer.
+
+        Args:
+            df: The DataFrame to standardize
+            season: Season ID (e.g., '2023-24')
+            playoffs: Whether this is playoff data
+            add_metadata: Whether to add metadata fields
+        """
+        super().__init__(df, add_metadata)
+        self.season = season
+        self.playoffs = playoffs
 
     def standardize(self) -> pd.DataFrame:
         """Apply game-specific standardization steps.
@@ -234,6 +299,7 @@ class GameDataStandardizer(DataStandardizer):
         self.convert_clock_time()
         self.parse_matchup_string()
         self.standardize_wl()
+        self.add_season_metadata()
 
         return self.df
 
@@ -367,6 +433,20 @@ class GameDataStandardizer(DataStandardizer):
                 except Exception as e:
                     logger.warning(f"Could not standardize W/L field {wl_field}: {e}")
 
+    def add_season_metadata(self) -> None:
+        """Add season_id in YYYYYYYY format if season is provided."""
+        if self.season:
+            season_id_value = Formatter.format_season_id(self.season)
+            if "season_id" not in self.df.columns:
+                self.df["season_id"] = season_id_value
+            else:
+                # Ensure existing season_id is in correct format
+                self.df["season_id"] = self.df["season_id"].apply(
+                    lambda x: Formatter.format_season_id(x)
+                    if pd.notna(x)
+                    else season_id_value
+                )
+
 
 class SeasonDataStandardizer(DataStandardizer):
     """Standardizer for season-specific data."""
@@ -407,9 +487,19 @@ class SeasonDataStandardizer(DataStandardizer):
         return self.df
 
     def add_season_id(self) -> None:
-        """Add season_id column if season is provided."""
-        if self.season and "season_id" not in self.df.columns:
-            self.df["season_id"] = self.season
+        """Add season_id column in YYYYYYYY format if season is provided."""
+        if self.season:
+            # Convert to YYYYYYYY format
+            season_id_value = Formatter.format_season_id(self.season)
+            if "season_id" not in self.df.columns:
+                self.df["season_id"] = season_id_value
+            else:
+                # Ensure existing season_id is in correct format
+                self.df["season_id"] = self.df["season_id"].apply(
+                    lambda x: Formatter.format_season_id(x)
+                    if pd.notna(x)
+                    else season_id_value
+                )
 
     def add_playoff_flag(self) -> None:
         """Add or standardize playoff indicator."""
@@ -497,7 +587,7 @@ def standardize_dataframe(
     Args:
         df: The DataFrame to standardize
         data_type: Type of data ('player', 'game', 'season', 'team', or 'base')
-        season: Season ID for season/team data
+        season: Season ID for season/team/player/game data (e.g., '2023-24')
         playoffs: Whether this is playoff data
         add_metadata: Whether to add metadata fields
 
@@ -506,7 +596,7 @@ def standardize_dataframe(
 
     Example:
         >>> df = player.get_common_info()
-        >>> standardized_df = standardize_dataframe(df, data_type='player')
+        >>> standardized_df = standardize_dataframe(df, data_type='player', season='2023-24')
     """
     standardizers = {
         "player": PlayerDataStandardizer,
@@ -519,7 +609,7 @@ def standardize_dataframe(
     standardizer_class = standardizers.get(data_type.lower(), DataStandardizer)
 
     # Create standardizer with appropriate arguments
-    if data_type.lower() in ["season", "team"]:
+    if data_type.lower() in ["season", "team", "player", "game"]:
         standardizer = standardizer_class(
             df, season=season, playoffs=playoffs, add_metadata=add_metadata
         )

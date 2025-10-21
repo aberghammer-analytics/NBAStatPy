@@ -81,9 +81,12 @@ class Player:
 
         return df
 
-    def get_salary(self) -> pd.DataFrame:
+    def get_salary(self, standardize: bool = False) -> pd.DataFrame:
         """
         Retrieves the salary information for a player from hoopshype.com.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pd.DataFrame: A DataFrame containing the salary information for the player.
@@ -104,12 +107,14 @@ class Player:
                 for row in tables[1].find_all("tr")
             ]
 
-            projected = pd.DataFrame(rows[1:], columns=rows[0])
-            projected["Team"] = projected.columns[1]
-            projected = projected.rename(columns={projected.columns[1]: "Salary"})
+            if not rows[0]:
+                cols = ["Season", "Team", "Salary"]
+
+            projected = pd.DataFrame(rows[1:], columns=cols)
+            projected["Team"] = "Projected"
             projected["Salary_Type"] = "Projected"
 
-            historical = pd.DataFrame(rows2[1:], columns=rows2[0])
+            historical = pd.DataFrame(rows2[1:], columns=cols)
             historical["Salary_Type"] = "Historical"
 
             self.salary_df = pd.concat([projected, historical])
@@ -121,6 +126,61 @@ class Player:
                 for row in tables[0].find_all("tr")
             ]
             self.salary_df = pd.DataFrame(rows[1:], columns=rows[0])
+
+        if standardize:
+            # Make all columns lowercase
+            self.salary_df.columns = [col.lower() for col in self.salary_df.columns]
+
+            # Filter out rows where season is 'Total'
+            if "season" in self.salary_df.columns:
+                self.salary_df = self.salary_df[
+                    self.salary_df["season"].str.lower() != "total"
+                ]
+
+                # Convert season column to YYYYYYYY format
+                self.salary_df["season"] = self.salary_df["season"].apply(
+                    lambda x: Formatter.format_season_id(x) if pd.notna(x) else None
+                )
+
+            # Remove repeated team name suffix
+            if "team" in self.salary_df.columns:
+
+                def remove_duplicate_suffix(team_name):
+                    if pd.isna(team_name) or team_name == "":
+                        return team_name
+                    team_str = str(team_name).strip()
+                    words = team_str.split()
+                    if len(words) >= 2:
+                        # The last word will be the duplicated part (e.g., "LakersLakers")
+                        last_word = words[-1]
+                        # Check if it's even length and first half equals second half
+                        if len(last_word) % 2 == 0:
+                            mid = len(last_word) // 2
+                            if last_word[:mid] == last_word[mid:]:
+                                # Replace the duplicated word with the single version
+                                words[-1] = last_word[:mid]
+                                return " ".join(words)
+                    return team_str
+
+                self.salary_df["team"] = self.salary_df["team"].apply(
+                    remove_duplicate_suffix
+                )
+
+            # Clean and convert salary column to integer
+            if "salary" in self.salary_df.columns:
+
+                def clean_salary(salary_value):
+                    if pd.isna(salary_value) or salary_value == "":
+                        return None
+                    # Remove all non-numeric characters except digits
+                    import re
+
+                    numeric_only = re.sub(r"[^\d]", "", str(salary_value))
+                    if numeric_only:
+                        return int(numeric_only)
+                    return None
+
+                self.salary_df["salary"] = self.salary_df["salary"].apply(clean_salary)
 
         return self.salary_df
 
