@@ -163,3 +163,4 @@ cython_debug/
 .scratch/
 .vscode/
 .claude/
+TODO.md 
