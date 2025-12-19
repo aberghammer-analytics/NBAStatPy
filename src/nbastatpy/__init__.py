@@ -12,5 +12,4 @@ __all__ = [
     "Season",
     "Team",
     "standardize_dataframe",
-    "validate_dataframe",
 ]
