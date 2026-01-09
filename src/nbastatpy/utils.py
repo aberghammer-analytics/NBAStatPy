@@ -67,6 +67,7 @@ class PlayTypes:
 
 
 class Formatter:
+    @staticmethod
     def get_current_season_year() -> str:
         current_datetime = datetime.now()
         current_season_year = current_datetime.year
@@ -74,6 +75,7 @@ class Formatter:
             current_season_year -= 1
         return current_season_year
 
+    @staticmethod
     def normalize_season_year(season_input) -> int:
         """
         Normalize various season year inputs to a 4-digit year.
@@ -104,9 +106,11 @@ class Formatter:
 
         return year
 
+    @staticmethod
     def format_season(season_year: int) -> str:
         return "{}-{}".format(int(season_year), str(int(season_year) + 1)[2:])
 
+    @staticmethod
     def format_season_id(season_input) -> str:
         """
         Convert any season format to YYYYYYYY format (8 digits representing two years).
@@ -146,12 +150,15 @@ class Formatter:
         year = Formatter.normalize_season_year(season_input)
         return f"{year}{year + 1}"
 
+    @staticmethod
     def format_game_id(game_id) -> str:
         return str(game_id).zfill(10)
 
+    @staticmethod
     def combine_strings(row) -> str:
         return next(value for value in row if pd.notna(value))
 
+    @staticmethod
     def check_playtype(play: str, playtypes: dict) -> str:
         play = play.replace("_", "").replace("-", "").upper()
 
@@ -162,3 +169,27 @@ class Formatter:
             raise ValueError(f"Playtype: {play} not found")
 
         return playtypes[play]
+
+    @staticmethod
+    def normalize_season(season: str) -> str:
+        """Convert various season formats to YYYYYYYY."""
+        s = season.replace("-", "").replace(" ", "")
+
+        if len(s) == 8 and s.isdigit():
+            return s
+        if len(s) == 4 and s.isdigit():
+            first_two = s[:2]
+            if first_two in ["19", "20"]:
+                # Full year like "2024" -> "20242025"
+                year = int(s)
+                return f"{year}{year + 1}"
+            else:
+                # Shortened format like "2324" from "23-24" -> "20232024"
+                return f"20{s[:2]}20{s[2:]}"
+        if len(s) == 6 and s.isdigit():
+            # "202324" -> "20232024"
+            start_year = s[:4]
+            end_year_suffix = s[4:]
+            return f"{start_year}20{end_year_suffix}"
+
+        return s

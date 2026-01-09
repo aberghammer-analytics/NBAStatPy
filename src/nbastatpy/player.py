@@ -99,12 +99,12 @@ class Player:
             # Get the table rows
             rows = [
                 [cell.text.strip() for cell in row.find_all("td")]
-                for row in tables[0].find_all("tr")
+                for row in tables[2].find_all("tr")
             ]
 
             rows2 = [
                 [cell.text.strip() for cell in row.find_all("td")]
-                for row in tables[1].find_all("tr")
+                for row in tables[3].find_all("tr")
             ]
 
             if not rows[0]:

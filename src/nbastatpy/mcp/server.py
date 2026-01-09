@@ -1,7 +1,7 @@
 # nbastatpy/mcp/server.py
 from fastmcp import FastMCP
 
-mcp = FastMCP("nbastatpy", description="NBA statistics and analytics")
+mcp = FastMCP(name="nbastatpy")
 
 # These imports register the tools via their @mcp.tool() decorators
 from nbastatpy.mcp.tools import (  # noqa: E402, F401
