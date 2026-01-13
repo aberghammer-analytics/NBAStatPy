@@ -10,10 +10,10 @@ from nbastatpy.standardize import standardize_dataframe
 from nbastatpy.utils import Formatter, LeaderStats, PlayTypes
 
 
-class Season:
+class League:
     def __init__(self, season_year=None, playoffs=False, permode: str = "PERGAME"):
         """
-        Initialize a Season object.
+        Initialize a League object.
 
         Args:
             season_year (int | str, optional): The year of the season. Can be provided in various formats:
@@ -86,7 +86,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -114,7 +114,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -141,7 +141,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -168,7 +168,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -195,7 +195,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -222,7 +222,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -249,7 +249,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -276,7 +276,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -303,7 +303,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -330,7 +330,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -357,7 +357,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -384,7 +384,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -411,7 +411,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -437,7 +437,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -463,7 +463,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -490,7 +490,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -516,7 +516,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -817,23 +817,23 @@ class Season:
             raise ValueError(f"Invalid stat_category '{stat_category}'. Valid: {valid}")
         stat_abbrev = LeaderStats.STAT_CATEGORIES[stat_key]
 
-        # Map permode to LeagueLeaders format (Totals, PerGame, Per48)
-        per_mode_map = {"PerGame": "PerGame", "Totals": "Totals", "Per36": "PerGame"}
-        per_mode_value = per_mode_map.get(self.permode, "PerGame")
-
-        df = nba.LeagueLeaders(
+        # Use LeagueDashPlayerStats instead of LeagueLeaders for better historical season support
+        df = nba.LeagueDashPlayerStats(
             season=self.season,
-            stat_category_abbreviation=stat_abbrev,
-            per_mode48=per_mode_value,
+            per_mode_detailed=self.permode,
             season_type_all_star=self.season_type,
         ).get_data_frames()[0]
 
-        df = df.head(limit)
+        # Sort by the requested stat category and get top N
+        df = df.sort_values(by=stat_abbrev, ascending=False).head(limit).reset_index(drop=True)
+
+        # Add RANK column to match LeagueLeaders format
+        df.insert(0, 'RANK', range(1, len(df) + 1))
 
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -843,6 +843,6 @@ class Season:
 
 
 if __name__ == "__main__":
-    seas = Season(season_year="2004")
+    seas = League(season_year="2004")
     print(seas.permode)
     print(seas.get_salaries())
