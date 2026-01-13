@@ -42,3 +42,45 @@ async def test_get_player_salary(mcp_client: Client[FastMCPTransport]):
     data_text = result.content[0].text
     assert "season" in data_text.lower() or "2" in data_text
     assert any(keyword in data_text.lower() for keyword in ["salary", "$", "million"])
+
+
+async def test_get_league_leaders_points(mcp_client: Client[FastMCPTransport]):
+    """Test league leaders for points."""
+    result = await mcp_client.call_tool(
+        name="get_league_leaders",
+        arguments={"stat_category": "PTS", "limit": 10}
+    )
+
+    logger.info("League leaders (PTS) result:")
+    logger.info(result.content[0].text)
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+
+async def test_get_league_leaders_alltime(mcp_client: Client[FastMCPTransport]):
+    """Test all-time career leaders."""
+    result = await mcp_client.call_tool(
+        name="get_league_leaders",
+        arguments={"stat_category": "points", "season": "all-time", "limit": 5}
+    )
+
+    logger.info("All-time leaders result:")
+    logger.info(result.content[0].text)
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+
+async def test_get_league_leaders_specific_season(mcp_client: Client[FastMCPTransport]):
+    """Test leaders for a specific season."""
+    result = await mcp_client.call_tool(
+        name="get_league_leaders",
+        arguments={"stat_category": "rebounds", "season": "2023-24"}
+    )
+
+    logger.info("2023-24 rebounding leaders result:")
+    logger.info(result.content[0].text)
+
+    assert result.is_error is False
+    assert len(result.content) > 0

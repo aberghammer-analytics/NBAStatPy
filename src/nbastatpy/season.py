@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from rich.progress import track
 
 from nbastatpy.standardize import standardize_dataframe
-from nbastatpy.utils import Formatter, PlayTypes
+from nbastatpy.utils import Formatter, LeaderStats, PlayTypes
 
 
 class Season:
@@ -792,6 +792,54 @@ class Season:
             self.defense = pd.concat(df_list)
 
         return self.defense
+
+    def get_league_leaders(
+        self, stat_category: str, limit: int = 25, standardize: bool = False
+    ) -> pd.DataFrame:
+        """
+        Retrieves league leaders for a specific statistic for the season.
+
+        Args:
+            stat_category: Statistic to rank by (e.g., "PTS", "points", "REB", "rebounds",
+                "AST", "assists", "STL", "BLK", "FG_PCT", "FG3_PCT").
+            limit: Maximum number of leaders to return. Defaults to 25.
+            standardize: Whether to apply data standardization. Defaults to False.
+
+        Returns:
+            pd.DataFrame: The league leaders data for the specified statistic.
+        """
+        # Normalize stat category
+        stat_key = (
+            stat_category.replace("_", "").replace("-", "").replace(" ", "").upper()
+        )
+        if stat_key not in LeaderStats.STAT_CATEGORIES:
+            valid = sorted(set(LeaderStats.STAT_CATEGORIES.values()))
+            raise ValueError(f"Invalid stat_category '{stat_category}'. Valid: {valid}")
+        stat_abbrev = LeaderStats.STAT_CATEGORIES[stat_key]
+
+        # Map permode to LeagueLeaders format (Totals, PerGame, Per48)
+        per_mode_map = {"PerGame": "PerGame", "Totals": "Totals", "Per36": "PerGame"}
+        per_mode_value = per_mode_map.get(self.permode, "PerGame")
+
+        df = nba.LeagueLeaders(
+            season=self.season,
+            stat_category_abbreviation=stat_abbrev,
+            per_mode48=per_mode_value,
+            season_type_all_star=self.season_type,
+        ).get_data_frames()[0]
+
+        df = df.head(limit)
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="season",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.league_leaders = df
+        return self.league_leaders
 
 
 if __name__ == "__main__":

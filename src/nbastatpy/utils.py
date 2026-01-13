@@ -3,6 +3,67 @@ from datetime import datetime
 import pandas as pd
 
 
+class LeaderStats:
+    """Mapping for league leader stat categories."""
+
+    STAT_CATEGORIES = {
+        # User-friendly names -> API abbreviations
+        "POINTS": "PTS",
+        "PTS": "PTS",
+        "REBOUNDS": "REB",
+        "REB": "REB",
+        "ASSISTS": "AST",
+        "AST": "AST",
+        "STEALS": "STL",
+        "STL": "STL",
+        "BLOCKS": "BLK",
+        "BLK": "BLK",
+        "FIELDGOALPCT": "FG_PCT",
+        "FG_PCT": "FG_PCT",
+        "FGPCT": "FG_PCT",
+        "THREEPOINTPCT": "FG3_PCT",
+        "FG3_PCT": "FG3_PCT",
+        "FG3PCT": "FG3_PCT",
+        "FREETHROWPCT": "FT_PCT",
+        "FT_PCT": "FT_PCT",
+        "FTPCT": "FT_PCT",
+        "FGM": "FGM",
+        "FGA": "FGA",
+        "FG3M": "FG3M",
+        "FG3A": "FG3A",
+        "FTM": "FTM",
+        "FTA": "FTA",
+        "OREB": "OREB",
+        "DREB": "DREB",
+        "TURNOVERS": "TOV",
+        "TOV": "TOV",
+        "GAMESPLAYED": "GP",
+        "GP": "GP",
+    }
+
+    # Map stat abbreviation -> AllTimeLeadersGrids attribute name
+    ALLTIME_ATTR_MAP = {
+        "PTS": "pts_leaders",
+        "AST": "ast_leaders",
+        "REB": "reb_leaders",
+        "STL": "stl_leaders",
+        "BLK": "blk_leaders",
+        "FGM": "fgm_leaders",
+        "FGA": "fga_leaders",
+        "FG_PCT": "fg_pct_leaders",
+        "FG3M": "fg3_m_leaders",
+        "FG3A": "fg3_a_leaders",
+        "FG3_PCT": "fg3_pct_leaders",
+        "FTM": "ftm_leaders",
+        "FTA": "fta_leaders",
+        "FT_PCT": "ft_pct_leaders",
+        "OREB": "oreb_leaders",
+        "DREB": "dreb_leaders",
+        "TOV": "tov_leaders",
+        "GP": "g_p_leaders",
+    }
+
+
 class PlayTypes:
     PERMODE = {
         "PERGAME": "PerGame",
