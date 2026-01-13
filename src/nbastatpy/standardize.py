@@ -448,8 +448,8 @@ class GameDataStandardizer(DataStandardizer):
                 )
 
 
-class SeasonDataStandardizer(DataStandardizer):
-    """Standardizer for season-specific data."""
+class LeagueDataStandardizer(DataStandardizer):
+    """Standardizer for league-specific data."""
 
     def __init__(
         self,
@@ -458,7 +458,7 @@ class SeasonDataStandardizer(DataStandardizer):
         playoffs: bool = False,
         add_metadata: bool = False,
     ):
-        """Initialize the SeasonDataStandardizer.
+        """Initialize the LeagueDataStandardizer.
 
         Args:
             df: The DataFrame to standardize
@@ -471,7 +471,7 @@ class SeasonDataStandardizer(DataStandardizer):
         self.playoffs = playoffs
 
     def standardize(self) -> pd.DataFrame:
-        """Apply season-specific standardization steps.
+        """Apply league-specific standardization steps.
 
         Returns:
             Standardized DataFrame
@@ -601,7 +601,7 @@ def standardize_dataframe(
     standardizers = {
         "player": PlayerDataStandardizer,
         "game": GameDataStandardizer,
-        "season": SeasonDataStandardizer,
+        "league": LeagueDataStandardizer,
         "team": TeamDataStandardizer,
         "base": DataStandardizer,
     }
@@ -609,7 +609,7 @@ def standardize_dataframe(
     standardizer_class = standardizers.get(data_type.lower(), DataStandardizer)
 
     # Create standardizer with appropriate arguments
-    if data_type.lower() in ["season", "team", "player", "game"]:
+    if data_type.lower() in ["league", "team", "player", "game"]:
         standardizer = standardizer_class(
             df, season=season, playoffs=playoffs, add_metadata=add_metadata
         )

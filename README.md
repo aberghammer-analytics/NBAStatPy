@@ -25,7 +25,7 @@ stats = player.get_career_stats()
 
 - **Player** - Access player stats, career data, and awards
 - **Game** - Get boxscores, play-by-play, and game details
-- **Season** - Query league-wide stats, lineups, and tracking data
+- **League** - Query league-wide stats, lineups, and tracking data
 - **Team** - Retrieve team rosters, stats, and splits
 
 

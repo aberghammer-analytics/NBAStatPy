@@ -407,7 +407,7 @@ class TableConfigs:
         "winprobabilitypbp",
     }
 
-    # Season endpoints
+    # League endpoints
     SEASON_ENDPOINTS: Set[str] = {
         "leaguedashlineups",
         "leaguelineupviz",

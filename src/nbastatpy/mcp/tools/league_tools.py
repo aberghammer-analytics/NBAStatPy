@@ -1,6 +1,6 @@
 import nba_api.stats.endpoints as nba
 
-from nbastatpy import Season
+from nbastatpy import League
 from nbastatpy.mcp.server import mcp
 from nbastatpy.utils import LeaderStats
 
@@ -26,10 +26,10 @@ def get_league_leaders(
     if season and season.lower() == "all-time":
         return _get_alltime_leaders(stat_category, per_mode, season_type, limit)
 
-    # Use Season class for season-specific leaders
+    # Use League class for season-specific leaders
     playoffs = season_type == "Playoffs"
-    season_obj = Season(season_year=season, playoffs=playoffs, permode=per_mode)
-    leaders = season_obj.get_league_leaders(stat_category, limit=limit, standardize=True)
+    league_obj = League(season_year=season, playoffs=playoffs, permode=per_mode)
+    leaders = league_obj.get_league_leaders(stat_category, limit=limit, standardize=True)
 
     return leaders.to_dict(orient="records")
 

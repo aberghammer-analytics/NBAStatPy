@@ -1,8 +1,8 @@
-from nbastatpy.season import Season
+from nbastatpy.league import League
 
 SEASON_YEAR = "2020"
 
 
-def test_season_creation():
-    season = Season(SEASON_YEAR)
-    assert season.season_year == int(SEASON_YEAR)
+def test_league_creation():
+    league = League(SEASON_YEAR)
+    assert league.season_year == int(SEASON_YEAR)
