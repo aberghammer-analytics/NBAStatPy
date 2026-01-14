@@ -1,3 +1,4 @@
+from time import sleep
 from typing import List
 
 import nba_api.stats.endpoints as nba
@@ -5,6 +6,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from nba_api.stats.static import teams
+from rich.progress import track
 
 from nbastatpy.standardize import standardize_dataframe
 from nbastatpy.utils import Formatter, PlayTypes
@@ -461,6 +463,157 @@ class Team:
             ).get_data_frames()[1:]
         )
         return self.player_onoff.reset_index(drop=True)
+
+    def get_game_log(
+        self,
+        last_n_games: int | None = None,
+        include_opponent_stats: bool = False,
+        include_advanced_stats: bool = False,
+        standardize: bool = False,
+    ) -> pd.DataFrame:
+        """
+        Retrieves the game log for the team with optional opponent and advanced statistics.
+
+        Args:
+            last_n_games: Number of most recent games to retrieve. If None, returns all games.
+            include_opponent_stats: If True, includes opponent stats with OPP_ prefix.
+            include_advanced_stats: If True, includes advanced stats (ratings, pace, four factors).
+                Note: This makes additional API calls per game and may be slower.
+            standardize: Whether to apply data standardization.
+
+        Returns:
+            pd.DataFrame: Game log with team stats, and optionally opponent/advanced stats.
+        """
+        # Get team's game log
+        df = nba.TeamGameLog(
+            team_id=self.id,
+            season=self.season,
+            season_type_all_star=self.season_type,
+        ).get_data_frames()[0]
+
+        # Filter to last n games if specified
+        if last_n_games is not None:
+            df = df.head(last_n_games)
+
+        # Include opponent stats if requested
+        if include_opponent_stats:
+            df = self._add_opponent_stats(df)
+
+        # Include advanced stats if requested
+        if include_advanced_stats:
+            df = self._add_advanced_stats(df)
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="team",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.game_log = df
+        return self.game_log
+
+    def _add_opponent_stats(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Adds opponent statistics to the game log DataFrame.
+
+        Args:
+            df: Game log DataFrame with team stats.
+
+        Returns:
+            pd.DataFrame: Game log with opponent stats merged (OPP_ prefix).
+        """
+        # Get all team game logs for the season
+        all_games = nba.LeagueGameLog(
+            season=self.season,
+            season_type_all_star=self.season_type,
+            player_or_team_abbreviation="T",
+        ).get_data_frames()[0]
+
+        # Columns to include as opponent stats (exclude metadata columns)
+        stat_cols = [
+            "FGM", "FGA", "FG_PCT", "FG3M", "FG3A", "FG3_PCT",
+            "FTM", "FTA", "FT_PCT", "OREB", "DREB", "REB",
+            "AST", "STL", "BLK", "TOV", "PF", "PTS", "PLUS_MINUS",
+        ]
+
+        # Get opponent rows for each game
+        opponent_stats_list = []
+        for game_id in df["Game_ID"]:
+            game_rows = all_games[all_games["GAME_ID"] == game_id]
+            opponent_row = game_rows[game_rows["TEAM_ID"] != self.id]
+            if not opponent_row.empty:
+                opp_data = {"Game_ID": game_id}
+                for col in stat_cols:
+                    if col in opponent_row.columns:
+                        opp_data[f"OPP_{col}"] = opponent_row[col].values[0]
+                opponent_stats_list.append(opp_data)
+
+        if opponent_stats_list:
+            opponent_df = pd.DataFrame(opponent_stats_list)
+            df = df.merge(opponent_df, on="Game_ID", how="left")
+
+        return df
+
+    def _add_advanced_stats(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Adds advanced statistics to the game log DataFrame.
+
+        Args:
+            df: Game log DataFrame.
+
+        Returns:
+            pd.DataFrame: Game log with advanced stats merged.
+        """
+        advanced_stats_list = []
+        game_ids = df["Game_ID"].tolist()
+
+        for game_id in track(game_ids, description="Fetching advanced stats"):
+            game_advanced = {}
+            game_advanced["Game_ID"] = game_id
+
+            # Get BoxScoreAdvancedV3 data
+            try:
+                advanced = nba.BoxScoreAdvancedV3(game_id=game_id)
+                team_advanced = advanced.get_data_frames()[1]
+                team_row = team_advanced[team_advanced["teamId"] == self.id]
+
+                if not team_row.empty:
+                    game_advanced["OFF_RATING"] = team_row["offensiveRating"].values[0]
+                    game_advanced["DEF_RATING"] = team_row["defensiveRating"].values[0]
+                    game_advanced["NET_RATING"] = team_row["netRating"].values[0]
+                    game_advanced["PACE"] = team_row["pace"].values[0]
+                    game_advanced["EFG_PCT"] = team_row["effectiveFieldGoalPercentage"].values[0]
+                    game_advanced["TS_PCT"] = team_row["trueShootingPercentage"].values[0]
+                    game_advanced["PIE"] = team_row["PIE"].values[0]
+            except Exception:
+                pass  # Skip if API call fails
+
+            sleep(0.6)  # Rate limiting
+
+            # Get BoxScoreFourFactorsV3 data
+            try:
+                four_factors = nba.BoxScoreFourFactorsV3(game_id=game_id)
+                team_ff = four_factors.get_data_frames()[1]
+                team_row = team_ff[team_ff["teamId"] == self.id]
+
+                if not team_row.empty:
+                    game_advanced["FT_RATE"] = team_row["freeThrowAttemptRate"].values[0]
+                    game_advanced["TOV_PCT"] = team_row["teamTurnoverPercentage"].values[0]
+                    game_advanced["OREB_PCT"] = team_row["offensiveReboundPercentage"].values[0]
+            except Exception:
+                pass  # Skip if API call fails
+
+            sleep(0.6)  # Rate limiting
+
+            advanced_stats_list.append(game_advanced)
+
+        if advanced_stats_list:
+            advanced_df = pd.DataFrame(advanced_stats_list)
+            df = df.merge(advanced_df, on="Game_ID", how="left")
+
+        return df
 
 
 if __name__ == "__main__":

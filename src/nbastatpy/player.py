@@ -10,7 +10,7 @@ from nba_api.stats.static import players, teams
 from PIL import Image
 
 from nbastatpy.standardize import standardize_dataframe
-from nbastatpy.utils import Formatter, PlayTypes
+from nbastatpy.utils import Formatter, MeasureTypes, PlayTypes
 
 
 class Player:
@@ -318,6 +318,77 @@ class Player:
 
         self.games_boxscore = df
         return self.games_boxscore
+
+    def get_game_logs(
+        self,
+        last_n_games: int | None = None,
+        measure_type: str = "Base",
+        per_mode: str | None = None,
+        standardize: bool = False,
+    ) -> pd.DataFrame:
+        """
+        Retrieves detailed game logs for the player with configurable stat types.
+
+        Args:
+            last_n_games: Number of most recent games to retrieve.
+                          If None, returns all games for the season.
+            measure_type: Type of statistics to include:
+                          - "Base": Traditional stats (PTS, REB, AST, etc.)
+                          - "Advanced": Advanced metrics (OFF_RATING, DEF_RATING, TS_PCT, etc.)
+                          - "Misc": Miscellaneous stats
+                          - "Scoring": Scoring breakdown stats
+                          - "Usage": Usage statistics
+            per_mode: How to calculate statistics:
+                      - "PerGame": Per game averages (default)
+                      - "Per36": Per 36 minutes
+                      - "Per100Possessions": Per 100 possessions
+                      - "PerMinute": Per minute
+                      - "Totals": Raw totals
+                      If None, uses instance's permode setting.
+            standardize: Whether to apply data standardization.
+
+        Returns:
+            pd.DataFrame: Game logs with the requested statistics.
+                          When standardize=True, column names are lowercase.
+                          When standardize=False, column names are uppercase (as returned by API).
+        """
+        # Validate last_n_games parameter
+        if last_n_games is not None and (last_n_games < 1 or last_n_games > 82):
+            raise ValueError(
+                f"last_n_games must be between 1 and 82, got {last_n_games}"
+            )
+
+        # Normalize measure_type
+        measure_key = (
+            measure_type.replace("_", "").replace("-", "").replace(" ", "").upper()
+        )
+        if measure_key not in MeasureTypes.TYPES:
+            valid = sorted(set(MeasureTypes.TYPES.values()))
+            raise ValueError(f"Invalid measure_type '{measure_type}'. Valid: {valid}")
+        normalized_measure = MeasureTypes.TYPES[measure_key]
+
+        # Use provided per_mode or fall back to instance setting
+        actual_permode = per_mode if per_mode else self.permode
+
+        df = nba.PlayerGameLogs(
+            player_id_nullable=self.id,
+            season_nullable=self.season,
+            season_type_nullable=self.season_type,
+            measure_type_player_game_logs_nullable=normalized_measure,
+            per_mode_simple_nullable=actual_permode,
+            last_n_games_nullable=last_n_games,
+        ).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="player",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.game_logs = df
+        return self.game_logs
 
     def get_matchups(self, defense: bool = False) -> pd.DataFrame:
         """

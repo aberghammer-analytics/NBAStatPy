@@ -127,6 +127,22 @@ class PlayTypes:
     }
 
 
+class MeasureTypes:
+    """Mapping for player game log measure types."""
+
+    TYPES = {
+        "BASE": "Base",
+        "BASIC": "Base",
+        "TRADITIONAL": "Base",
+        "ADVANCED": "Advanced",
+        "ADV": "Advanced",
+        "MISC": "Misc",
+        "MISCELLANEOUS": "Misc",
+        "SCORING": "Scoring",
+        "USAGE": "Usage",
+    }
+
+
 class Formatter:
     @staticmethod
     def get_current_season_year() -> str:
