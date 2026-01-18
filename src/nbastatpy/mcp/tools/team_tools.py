@@ -121,3 +121,79 @@ def get_team_play_type_stats(
             df = df[df[name_col].str.lower().str.contains(team_name.lower(), na=False)]
 
     return cast(list[dict[Any, Any]], df.to_dict(orient="records"))
+
+
+@mcp.tool()
+def get_team_tracking_stats(
+    track_type: str = "Efficiency",
+    team_name: str | None = None,
+    season: str | None = None,
+    per_mode: str = "PerGame",
+    season_type: str = "Regular Season",
+) -> list[dict]:
+    """Get NBA tracking statistics for teams.
+
+    Returns team tracking data including speed/distance, possessions, drives, passing,
+    catch-and-shoot, pull-up shots, post touches, paint touches, elbow touches, and more.
+    Useful for understanding team movement patterns, ball handling, and efficiency metrics.
+
+    Args:
+        track_type: Type of tracking data to retrieve. Options:
+            - "SpeedDistance": Speed and distance traveled
+            - "Possessions": Possession statistics
+            - "CatchShoot": Catch and shoot stats
+            - "PullUpShot": Pull-up shooting stats
+            - "Defense": Defensive tracking
+            - "Drives": Drive statistics
+            - "Passing": Passing statistics
+            - "ElbowTouch": Elbow touch stats
+            - "PostTouch": Post touch stats
+            - "PaintTouch": Paint touch stats
+            - "Efficiency": Overall efficiency (default)
+            - "all": All tracking types
+        team_name: Optional team name to filter results (e.g., "Lakers", "Bucks", "Warriors").
+            Uses case-insensitive partial matching. If not provided, returns all teams.
+        season: Season year (e.g., "2024", "2024-25"). Defaults to current season.
+        per_mode: "PerGame" or "Totals". Defaults to "PerGame".
+        season_type: "Regular Season" or "Playoffs". Defaults to "Regular Season".
+
+    Examples:
+        - Get all team drive stats: get_team_tracking_stats(track_type="Drives")
+        - Get Lakers' tracking stats: get_team_tracking_stats(team_name="Lakers")
+        - Get speed/distance for Bucks: get_team_tracking_stats(track_type="SpeedDistance", team_name="Bucks")
+        - Get all tracking types: get_team_tracking_stats(track_type="all")
+    """
+    # Normalize season year if provided
+    season_year = str(Formatter.normalize_season_year(season)) if season else None
+
+    # Determine if playoffs
+    playoffs = season_type == "Playoffs"
+
+    # Normalize and validate per_mode
+    permode_key = per_mode.replace("_", "").replace("-", "").upper()
+    if permode_key not in PlayTypes.PERMODE:
+        valid_modes = sorted(set(PlayTypes.PERMODE.values()))
+        raise ValueError(f"Invalid per_mode '{per_mode}'. Valid: {valid_modes}")
+    normalized_permode = PlayTypes.PERMODE[permode_key]
+
+    # Create League instance
+    league = League(
+        season_year=season_year, playoffs=playoffs, permode=normalized_permode
+    )
+
+    # Get tracking team data with standardization
+    df = league.get_tracking_team(track_type=track_type, standardize=True)
+
+    # Filter by team name if provided (case-insensitive partial match)
+    if team_name:
+        # Try to find the team name column (may be lowercase after standardization)
+        name_col = None
+        for col in df.columns:
+            if col.lower() in ("team_name", "teamname"):
+                name_col = col
+                break
+
+        if name_col:
+            df = df[df[name_col].str.lower().str.contains(team_name.lower(), na=False)]
+
+    return cast(list[dict[Any, Any]], df.to_dict(orient="records"))

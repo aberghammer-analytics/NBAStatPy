@@ -525,14 +525,17 @@ class League:
         return self.player_estimated_metrics
 
     def get_synergy_player(
-        self, play_type: str = "Transition", offensive: bool = True
+        self, play_type: str = "Transition", offensive: bool = True, standardize: bool = False
     ) -> pd.DataFrame:
         """
         Retrieves synergy data for a specific play type and offensive/defensive category.
 
         Args:
             play_type (str, optional): The play type to retrieve synergy data for. Defaults to "Transition".
+                Options: "Transition", "Isolation", "PRBallHandler", "PRRollman", "Postup", "Spotup",
+                "Handoff", "Cut", "OffScreen", "OffRebound", "Misc", or "all" for all types.
             offensive (bool, optional): Specifies whether to retrieve offensive or defensive synergy data. Defaults to True.
+            standardize (bool, optional): Whether to apply data standardization. Defaults to False.
 
         Returns:
             pd.DataFrame: The synergy data as a pandas DataFrame.
@@ -571,17 +574,28 @@ class League:
 
             self.synergy = pd.concat(df_list)
 
+        if standardize:
+            self.synergy = standardize_dataframe(
+                self.synergy,
+                data_type="league",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
         return self.synergy
 
     def get_synergy_team(
-        self, play_type: str = "Transition", offensive: bool = True
+        self, play_type: str = "Transition", offensive: bool = True, standardize: bool = False
     ) -> pd.DataFrame:
         """
         Retrieves synergy data for a specific play type and team.
 
         Args:
             play_type (str, optional): The play type to retrieve synergy data for. Defaults to "Transition".
+                Options: "Transition", "Isolation", "PRBallHandler", "PRRollman", "Postup", "Spotup",
+                "Handoff", "Cut", "OffScreen", "OffRebound", "Misc", or "all" for all types.
             offensive (bool, optional): Determines whether to retrieve offensive or defensive synergy data. Defaults to True.
+            standardize (bool, optional): Whether to apply data standardization. Defaults to False.
 
         Returns:
             pd.DataFrame: A DataFrame containing the synergy data.
@@ -624,17 +638,30 @@ class League:
 
             self.synergy = pd.concat(df_list)
 
+        if standardize:
+            self.synergy = standardize_dataframe(
+                self.synergy,
+                data_type="league",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
         return self.synergy
 
     def get_tracking_player(
         self,
         track_type: str = "Efficiency",
+        standardize: bool = False,
     ) -> pd.DataFrame:
         """
         Retrieves tracking data for players based on the specified track type.
 
         Parameters:
             track_type (str): The type of tracking data to retrieve. Defaults to "Efficiency".
+                Options: "SpeedDistance", "Possessions", "CatchShoot", "PullUpShot", "Defense",
+                "Drives", "Passing", "ElbowTouch", "PostTouch", "PaintTouch", "Efficiency",
+                or "all" for all types.
+            standardize (bool): Whether to apply data standardization. Defaults to False.
 
         Returns:
             pd.DataFrame: A DataFrame containing the tracking data for players.
@@ -667,20 +694,33 @@ class League:
 
             self.tracking = pd.concat(df_list)
 
+        if standardize:
+            self.tracking = standardize_dataframe(
+                self.tracking,
+                data_type="league",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
         return self.tracking
 
     def get_tracking_team(
         self,
         track_type: str = "Efficiency",
+        standardize: bool = False,
     ) -> pd.DataFrame:
         """
-        Retrieves tracking data for a specific play type and returns it as a pandas DataFrame.
+        Retrieves tracking data for teams based on the specified track type.
 
         Parameters:
-            track_type (str): The play type to track. Defaults to "Efficiency".
+            track_type (str): The type of tracking data to retrieve. Defaults to "Efficiency".
+                Options: "SpeedDistance", "Possessions", "CatchShoot", "PullUpShot", "Defense",
+                "Drives", "Passing", "ElbowTouch", "PostTouch", "PaintTouch", "Efficiency",
+                or "all" for all types.
+            standardize (bool): Whether to apply data standardization. Defaults to False.
 
         Returns:
-            pd.DataFrame: The tracking data as a pandas DataFrame.
+            pd.DataFrame: A DataFrame containing the tracking data for teams.
         """
         self.play_type = Formatter.check_playtype(track_type, PlayTypes.TRACKING_TYPES)
 
@@ -707,6 +747,14 @@ class League:
                 sleep(1)
 
             self.tracking = pd.concat(df_list)
+
+        if standardize:
+            self.tracking = standardize_dataframe(
+                self.tracking,
+                data_type="league",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
 
         return self.tracking
 
