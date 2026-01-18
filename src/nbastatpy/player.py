@@ -216,6 +216,61 @@ class Player:
 
         return self.season_totals, self.career_totals
 
+    def get_career_stats_by_year(
+        self,
+        measure_type: str = "Base",
+        per_mode: str | None = None,
+        standardize: bool = False,
+    ) -> pd.DataFrame:
+        """Get career statistics broken down by season with flexible stat types and per-modes.
+
+        Unlike get_season_career_totals() which only supports basic stats with limited
+        per-modes, this method supports advanced statistics and all per-mode options
+        including Per100Possessions.
+
+        Args:
+            measure_type: Type of statistics to include:
+                - "Base": Traditional stats (PTS, REB, AST, etc.)
+                - "Advanced": Advanced metrics (TS_PCT, OFF_RATING, DEF_RATING, etc.)
+                - "Misc": Miscellaneous stats
+                - "Scoring": Scoring breakdown stats
+                - "Usage": Usage statistics
+            per_mode: How to calculate statistics:
+                - "PerGame": Per game averages (default)
+                - "Per36": Per 36 minutes
+                - "Per100Possessions": Per 100 possessions
+                - "Totals": Raw totals
+                If None, uses instance's permode setting.
+            standardize: Whether to apply data standardization.
+
+        Returns:
+            pd.DataFrame: Season-by-season career statistics.
+        """
+        # Normalize measure_type
+        measure_key = (
+            measure_type.replace("_", "").replace("-", "").replace(" ", "").upper()
+        )
+        if measure_key not in MeasureTypes.TYPES:
+            valid = sorted(set(MeasureTypes.TYPES.values()))
+            raise ValueError(f"Invalid measure_type '{measure_type}'. Valid: {valid}")
+        normalized_measure = MeasureTypes.TYPES[measure_key]
+
+        # Use provided per_mode or fall back to instance setting
+        actual_permode = per_mode if per_mode else self.permode
+
+        df = nba.PlayerDashboardByYearOverYear(
+            player_id=self.id,
+            measure_type_detailed=normalized_measure,
+            per_mode_detailed=actual_permode,
+            season_type_playoffs=self.season_type,
+        ).get_data_frames()[1]  # Index 1 = ByYearPlayerDashboard
+
+        if standardize:
+            df = standardize_dataframe(df, data_type="player")
+
+        self.career_stats_by_year = df
+        return self.career_stats_by_year
+
     def get_splits(self) -> pd.DataFrame:
         """Gets all splits for a given season"""
 

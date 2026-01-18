@@ -92,3 +92,60 @@ def get_player_game_logs(
     )
 
     return cast(list[dict[Any, Any]], game_logs.to_dict(orient="records"))
+
+
+@mcp.tool()
+def get_player_career_stats(
+    player_name: str,
+    stat_type: str = "Base",
+    per_mode: str = "PerGame",
+    season_type: str = "Regular Season",
+) -> list[dict]:
+    """Get a player's career statistics broken down by season.
+
+    Returns season-by-season career stats for a player. Supports different stat types
+    (traditional, advanced) and different calculation modes (per game, per 36, totals, etc.).
+
+    Args:
+        player_name: Player name (e.g., "LeBron James", "Giannis Antetokounmpo").
+        stat_type: Type of statistics to return:
+            - "Base": Traditional stats (PTS, REB, AST, FG%, etc.)
+            - "Advanced": Advanced metrics (TS%, EFG%, OFF_RATING, DEF_RATING, etc.)
+            - "Misc": Miscellaneous statistics
+            - "Scoring": Detailed scoring breakdown
+            - "Usage": Usage rate statistics
+            Defaults to "Base".
+        per_mode: How statistics are calculated:
+            - "PerGame": Per game averages
+            - "Per36": Per 36 minutes
+            - "Per100Possessions": Per 100 possessions (pace-adjusted)
+            - "Totals": Raw totals
+            Defaults to "PerGame".
+        season_type: "Regular Season" or "Playoffs". Defaults to "Regular Season".
+
+    Examples:
+        - Get LeBron's career stats: get_player_career_stats("LeBron James")
+        - Get Jokic's advanced career stats: get_player_career_stats("Nikola Jokic", stat_type="Advanced")
+        - Get Curry's career per-100 stats: get_player_career_stats("Stephen Curry", per_mode="Per100Possessions")
+    """
+    # Normalize and validate per_mode
+    permode_key = per_mode.replace("_", "").replace("-", "").upper()
+    if permode_key not in PlayTypes.PERMODE:
+        valid_modes = sorted(set(PlayTypes.PERMODE.values()))
+        raise ValueError(f"Invalid per_mode '{per_mode}'. Valid: {valid_modes}")
+    normalized_permode = PlayTypes.PERMODE[permode_key]
+
+    # Determine if playoffs
+    playoffs = season_type == "Playoffs"
+
+    # Create player instance
+    player = Player(player_name, playoffs=playoffs)
+
+    # Get career stats by year
+    career_stats = player.get_career_stats_by_year(
+        measure_type=stat_type,
+        per_mode=normalized_permode,
+        standardize=True,
+    )
+
+    return cast(list[dict[Any, Any]], career_stats.to_dict(orient="records"))
