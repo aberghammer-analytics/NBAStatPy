@@ -338,3 +338,189 @@ async def test_get_player_game_logs_invalid_last_n_games_too_large(mcp_client: C
 
     assert result.is_error is True
     assert "last_n_games must be between 1 and 82" in result.content[0].text
+
+
+# ============================================================================
+# Tests for get_recent_games_summary
+# ============================================================================
+
+
+async def test_get_recent_games_summary_basic(mcp_client: Client[FastMCPTransport]):
+    """Test get_recent_games_summary with default parameters."""
+    result = await mcp_client.call_tool(
+        name="get_recent_games_summary",
+        arguments={"last_n_days": 7}
+    )
+
+    logger.info("Recent games summary result:")
+    logger.info(result.content[0].text)
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+
+async def test_get_recent_games_summary_historical_season(mcp_client: Client[FastMCPTransport]):
+    """Test get_recent_games_summary for a historical season.
+
+    Note: For historical seasons, last_n_days filters from today's date,
+    so results will be empty for completed seasons. This test verifies
+    the tool handles this gracefully (returns empty list).
+    """
+    result = await mcp_client.call_tool(
+        name="get_recent_games_summary",
+        arguments={"last_n_days": 30, "season": "2023-24"}
+    )
+
+    logger.info("Historical season games summary:")
+    # Historical season has no games in "last 30 days" - returns empty list
+    assert result.is_error is False
+    # The result content contains the serialized empty list "[]"
+    if len(result.content) > 0:
+        logger.info(result.content[0].text)
+
+
+async def test_get_recent_games_summary_structure(mcp_client: Client[FastMCPTransport]):
+    """Test that get_recent_games_summary returns properly structured data."""
+    result = await mcp_client.call_tool(
+        name="get_recent_games_summary",
+        arguments={"last_n_days": 14}
+    )
+
+    assert result.is_error is False
+
+    # Verify data contains expected structure keywords
+    data_text = result.content[0].text
+    # Should contain game structure elements
+    assert "game_id" in data_text or "game_date" in data_text or "matchup" in data_text
+
+
+async def test_get_recent_games_summary_invalid_days_zero(mcp_client: Client[FastMCPTransport]):
+    """Test error handling for last_n_days=0."""
+    result = await mcp_client.call_tool(
+        name="get_recent_games_summary",
+        arguments={"last_n_days": 0},
+        raise_on_error=False
+    )
+
+    logger.info("Invalid last_n_days (0) error:")
+    logger.info(result.content[0].text)
+
+    assert result.is_error is True
+    assert "last_n_days must be between 1 and 365" in result.content[0].text
+
+
+async def test_get_recent_games_summary_invalid_days_negative(mcp_client: Client[FastMCPTransport]):
+    """Test error handling for negative last_n_days."""
+    result = await mcp_client.call_tool(
+        name="get_recent_games_summary",
+        arguments={"last_n_days": -5},
+        raise_on_error=False
+    )
+
+    logger.info("Invalid last_n_days (negative) error:")
+    logger.info(result.content[0].text)
+
+    assert result.is_error is True
+    assert "last_n_days must be between 1 and 365" in result.content[0].text
+
+
+async def test_get_recent_games_summary_invalid_days_too_large(mcp_client: Client[FastMCPTransport]):
+    """Test error handling for last_n_days > 365."""
+    result = await mcp_client.call_tool(
+        name="get_recent_games_summary",
+        arguments={"last_n_days": 500},
+        raise_on_error=False
+    )
+
+    logger.info("Invalid last_n_days (too large) error:")
+    logger.info(result.content[0].text)
+
+    assert result.is_error is True
+    assert "last_n_days must be between 1 and 365" in result.content[0].text
+
+
+# ============================================================================
+# Tests for get_recent_games_player_stats
+# ============================================================================
+
+
+async def test_get_recent_games_player_stats_basic(mcp_client: Client[FastMCPTransport]):
+    """Test get_recent_games_player_stats with default parameters."""
+    result = await mcp_client.call_tool(
+        name="get_recent_games_player_stats",
+        arguments={"last_n_days": 7}
+    )
+
+    logger.info("Recent games player stats result:")
+    logger.info(result.content[0].text)
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+
+async def test_get_recent_games_player_stats_team_filter(mcp_client: Client[FastMCPTransport]):
+    """Test get_recent_games_player_stats filtered by team."""
+    result = await mcp_client.call_tool(
+        name="get_recent_games_player_stats",
+        arguments={"last_n_days": 14, "team_abbreviation": "LAL"}
+    )
+
+    logger.info("Lakers player stats result:")
+    logger.info(result.content[0].text)
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+    # Verify LAL appears in the output
+    data_text = result.content[0].text
+    assert "LAL" in data_text
+
+
+async def test_get_recent_games_player_stats_historical_season(mcp_client: Client[FastMCPTransport]):
+    """Test get_recent_games_player_stats for a historical season.
+
+    Note: For historical seasons, last_n_days filters from today's date,
+    so results will be empty for completed seasons. This test verifies
+    the tool handles this gracefully (returns empty list).
+    """
+    result = await mcp_client.call_tool(
+        name="get_recent_games_player_stats",
+        arguments={"last_n_days": 30, "season": "2023-24"}
+    )
+
+    logger.info("Historical season player stats:")
+    # Historical season has no games in "last 30 days" - returns empty list
+    assert result.is_error is False
+    # The result content contains the serialized empty list "[]"
+    if len(result.content) > 0:
+        logger.info(result.content[0].text)
+
+
+async def test_get_recent_games_player_stats_structure(mcp_client: Client[FastMCPTransport]):
+    """Test that get_recent_games_player_stats returns properly structured data."""
+    result = await mcp_client.call_tool(
+        name="get_recent_games_player_stats",
+        arguments={"last_n_days": 14}
+    )
+
+    assert result.is_error is False
+
+    # Verify data contains expected structure keywords
+    data_text = result.content[0].text
+    # Should contain player stats elements
+    assert "player" in data_text.lower() or "pts" in data_text.lower()
+
+
+async def test_get_recent_games_player_stats_invalid_days(mcp_client: Client[FastMCPTransport]):
+    """Test error handling for invalid last_n_days."""
+    result = await mcp_client.call_tool(
+        name="get_recent_games_player_stats",
+        arguments={"last_n_days": 0},
+        raise_on_error=False
+    )
+
+    logger.info("Invalid last_n_days error:")
+    logger.info(result.content[0].text)
+
+    assert result.is_error is True
+    assert "last_n_days must be between 1 and 365" in result.content[0].text

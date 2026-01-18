@@ -1,3 +1,5 @@
+from typing import Any, cast
+
 from nbastatpy import Player
 from nbastatpy.mcp.server import mcp
 from nbastatpy.utils import Formatter, PlayTypes
@@ -18,7 +20,7 @@ def get_player_salary(player_name: str, season: str | None = None) -> list[dict]
 
     if season:
         salary = salary[salary["season"] == season]
-    return salary.to_dict(orient="records")
+    return cast(list[dict[Any, Any]], salary.to_dict(orient="records"))
 
 
 @mcp.tool()
@@ -66,7 +68,7 @@ def get_player_game_logs(
         raise ValueError(f"last_n_games must be between 1 and 82, got {last_n_games}")
 
     # Normalize season year if provided
-    season_year = Formatter.normalize_season_year(season) if season else None
+    season_year = str(Formatter.normalize_season_year(season)) if season else None
 
     # Determine if playoffs
     playoffs = season_type == "Playoffs"
@@ -89,4 +91,4 @@ def get_player_game_logs(
         standardize=True,
     )
 
-    return game_logs.to_dict(orient="records")
+    return cast(list[dict[Any, Any]], game_logs.to_dict(orient="records"))

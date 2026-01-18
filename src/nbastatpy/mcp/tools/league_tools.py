@@ -1,3 +1,5 @@
+from typing import Any, cast
+
 import nba_api.stats.endpoints as nba
 
 from nbastatpy import League
@@ -31,7 +33,7 @@ def get_league_leaders(
     league_obj = League(season_year=season, playoffs=playoffs, permode=per_mode)
     leaders = league_obj.get_league_leaders(stat_category, limit=limit, standardize=True)
 
-    return leaders.to_dict(orient="records")
+    return cast(list[dict[Any, Any]], leaders.to_dict(orient="records"))
 
 
 def _get_alltime_leaders(
@@ -58,4 +60,4 @@ def _get_alltime_leaders(
     )
 
     df = getattr(alltime, attr_name).get_data_frame()
-    return df.to_dict(orient="records")
+    return cast(list[dict[Any, Any]], df.to_dict(orient="records"))

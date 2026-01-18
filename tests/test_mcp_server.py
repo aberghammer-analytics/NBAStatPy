@@ -85,6 +85,8 @@ async def test_all_tools_registered(mcp_client: Client[FastMCPTransport]):
         "get_player_game_logs",
         "get_league_leaders",
         "get_team_recent_games",
+        "get_recent_games_summary",
+        "get_recent_games_player_stats",
     ]
 
     # Verify we have exactly the expected tools
@@ -100,9 +102,9 @@ async def test_tool_registration_count_by_module(mcp_client: Client[FastMCPTrans
     tools = await mcp_client.list_tools()
     tool_names = [tool.name for tool in tools]
 
-    # player_tools should contribute 2 tools
+    # player_tools should contribute 3 tools (includes get_recent_games_player_stats)
     player_tools = [name for name in tool_names if "player" in name]
-    assert len(player_tools) == 2
+    assert len(player_tools) == 3
 
     # league_tools should contribute 1 tool
     league_tools = [name for name in tool_names if "league" in name]
@@ -112,9 +114,9 @@ async def test_tool_registration_count_by_module(mcp_client: Client[FastMCPTrans
     team_tools = [name for name in tool_names if "team" in name]
     assert len(team_tools) == 1
 
-    # game_tools is empty and should contribute 0 tools
+    # game_tools should contribute 1 tool (get_recent_games_summary; player_stats excluded due to "player" filter)
     game_tools = [name for name in tool_names if "game" in name and "player" not in name and "team" not in name]
-    assert len(game_tools) == 0
+    assert len(game_tools) == 1
 
     logger.info(f"Tool count by module - player: {len(player_tools)}, league: {len(league_tools)}, team: {len(team_tools)}, game: {len(game_tools)}")
 

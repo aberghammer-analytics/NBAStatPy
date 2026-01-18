@@ -143,6 +143,60 @@ class MeasureTypes:
     }
 
 
+class GameStatsColumns:
+    """Column definitions for game statistics output."""
+
+    # Columns to include in team stats output
+    TEAM_STATS = [
+        "pts",
+        "reb",
+        "ast",
+        "stl",
+        "blk",
+        "tov",
+        "pf",
+        "fgm",
+        "fga",
+        "fg_pct",
+        "fg3m",
+        "fg3a",
+        "fg3_pct",
+        "ftm",
+        "fta",
+        "ft_pct",
+        "oreb",
+        "dreb",
+        "plus_minus",
+    ]
+
+    # Columns to include in player stats output
+    PLAYER_STATS = [
+        "player_id",
+        "player_name",
+        "team_abbreviation",
+        "min",
+        "pts",
+        "reb",
+        "ast",
+        "stl",
+        "blk",
+        "tov",
+        "pf",
+        "fgm",
+        "fga",
+        "fg_pct",
+        "fg3m",
+        "fg3a",
+        "fg3_pct",
+        "ftm",
+        "fta",
+        "ft_pct",
+        "oreb",
+        "dreb",
+        "plus_minus",
+    ]
+
+
 class Formatter:
     @staticmethod
     def get_current_season_year() -> str:

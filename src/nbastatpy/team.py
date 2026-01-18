@@ -16,8 +16,8 @@ class Team:
     def __init__(
         self,
         team_abbreviation: str,
-        season_year: str = None,
-        playoffs=False,
+        season_year: str | None = None,
+        playoffs: bool = False,
         permode: str = "PerGame",
     ):
         """

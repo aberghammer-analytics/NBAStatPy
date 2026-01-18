@@ -17,7 +17,7 @@ class Player:
     def __init__(
         self,
         player: str,
-        season_year: str = None,
+        season_year: str | None = None,
         playoffs: bool = False,
         permode: str = "PERGAME",
     ):

@@ -1,3 +1,5 @@
+from typing import Any, cast
+
 from nbastatpy import Team
 from nbastatpy.mcp.server import mcp
 from nbastatpy.utils import Formatter
@@ -26,7 +28,7 @@ def get_team_recent_games(
         include_advanced_stats: Whether to include advanced stats (OFF_RATING, DEF_RATING, NET_RATING, PACE, EFG_PCT, TS_PCT, PIE, FT_RATE, TOV_PCT, OREB_PCT). Slower due to additional API calls. Defaults to False.
     """
     # Normalize season format if provided
-    season_year = Formatter.normalize_season_year(season) if season else None
+    season_year = str(Formatter.normalize_season_year(season)) if season else None
 
     playoffs = season_type == "Playoffs"
     team = Team(team_abbreviation, season_year=season_year, playoffs=playoffs)
@@ -38,4 +40,4 @@ def get_team_recent_games(
         standardize=True,
     )
 
-    return game_log.to_dict(orient="records")
+    return cast(list[dict[Any, Any]], game_log.to_dict(orient="records"))
