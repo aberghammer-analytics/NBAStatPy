@@ -524,3 +524,416 @@ async def test_get_recent_games_player_stats_invalid_days(mcp_client: Client[Fas
 
     assert result.is_error is True
     assert "last_n_days must be between 1 and 365" in result.content[0].text
+
+
+# ============================================================================
+# Tests for get_player_career_stats
+# ============================================================================
+
+
+async def test_get_player_career_stats_basic(mcp_client: Client[FastMCPTransport]):
+    """Test get_player_career_stats with default parameters."""
+    result = await mcp_client.call_tool(
+        name="get_player_career_stats",
+        arguments={"player_name": "Stephen Curry"}
+    )
+
+    logger.info("Player career stats result:")
+    logger.info(result.content[0].text)
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+    # Verify data contains expected information
+    data_text = result.content[0].text
+    assert "pts" in data_text.lower() or "PTS" in data_text
+
+
+async def test_get_player_career_stats_advanced(mcp_client: Client[FastMCPTransport]):
+    """Test get_player_career_stats with advanced stats.
+
+    Note: This test may fail intermittently due to NBA API rate limiting or timeouts.
+    """
+    result = await mcp_client.call_tool(
+        name="get_player_career_stats",
+        arguments={
+            "player_name": "LeBron James",
+            "stat_type": "Advanced",
+        },
+        raise_on_error=False
+    )
+
+    logger.info("Advanced career stats result:")
+    if result.is_error:
+        logger.warning(f"API error (likely timeout): {result.content[0].text if result.content else 'unknown'}")
+    elif result.content:
+        logger.info(result.content[0].text)
+
+    # Allow API timeouts - these are external service issues
+    if result.is_error and result.content:
+        error_text = result.content[0].text.lower()
+        if "timeout" in error_text or "expecting value" in error_text:
+            pytest.skip("NBA API timeout - skipping flaky test")
+
+    assert result.is_error is False or "timeout" in str(result.content).lower()
+
+
+async def test_get_player_career_stats_per36(mcp_client: Client[FastMCPTransport]):
+    """Test get_player_career_stats with per 36 minutes mode.
+
+    Note: This test may fail intermittently due to NBA API rate limiting or timeouts.
+    """
+    result = await mcp_client.call_tool(
+        name="get_player_career_stats",
+        arguments={
+            "player_name": "Kevin Durant",
+            "per_mode": "Per36",
+        },
+        raise_on_error=False
+    )
+
+    logger.info("Per 36 career stats result:")
+    if result.is_error:
+        logger.warning(f"API error (likely timeout): {result.content[0].text if result.content else 'unknown'}")
+    elif result.content:
+        logger.info(result.content[0].text)
+
+    # Allow API timeouts - these are external service issues
+    if result.is_error and result.content:
+        error_text = result.content[0].text.lower()
+        if "timeout" in error_text or "expecting value" in error_text:
+            pytest.skip("NBA API timeout - skipping flaky test")
+
+    assert result.is_error is False or "timeout" in str(result.content).lower()
+
+
+async def test_get_player_career_stats_playoffs(mcp_client: Client[FastMCPTransport]):
+    """Test get_player_career_stats for playoffs."""
+    result = await mcp_client.call_tool(
+        name="get_player_career_stats",
+        arguments={
+            "player_name": "LeBron James",
+            "season_type": "Playoffs",
+        }
+    )
+
+    logger.info("Playoffs career stats result:")
+    logger.info(result.content[0].text)
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+
+async def test_get_player_career_stats_invalid_player(mcp_client: Client[FastMCPTransport]):
+    """Test error handling for non-existent player."""
+    result = await mcp_client.call_tool(
+        name="get_player_career_stats",
+        arguments={"player_name": "Invalid Player Name XYZ"},
+        raise_on_error=False
+    )
+
+    logger.info("Invalid player error:")
+    logger.info(result.content[0].text)
+
+    assert result.is_error is True
+    assert "not found" in result.content[0].text
+
+
+# ============================================================================
+# Tests for get_player_play_type_stats
+# ============================================================================
+
+
+async def test_get_player_play_type_stats_isolation(mcp_client: Client[FastMCPTransport]):
+    """Test get_player_play_type_stats for isolation plays."""
+    result = await mcp_client.call_tool(
+        name="get_player_play_type_stats",
+        arguments={"play_type": "Isolation"}
+    )
+
+    logger.info("Player isolation stats result:")
+    logger.info(result.content[0].text[:500])  # Truncate for readability
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+
+async def test_get_player_play_type_stats_with_player_filter(mcp_client: Client[FastMCPTransport]):
+    """Test get_player_play_type_stats filtered by player."""
+    result = await mcp_client.call_tool(
+        name="get_player_play_type_stats",
+        arguments={
+            "play_type": "Isolation",
+            "player_name": "Kevin Durant",
+        }
+    )
+
+    logger.info("Kevin Durant isolation stats result:")
+    logger.info(result.content[0].text)
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+    # Verify Durant appears in the output
+    data_text = result.content[0].text
+    assert "durant" in data_text.lower() or "Kevin" in data_text
+
+
+async def test_get_player_play_type_stats_all_types(mcp_client: Client[FastMCPTransport]):
+    """Test get_player_play_type_stats for all play types."""
+    result = await mcp_client.call_tool(
+        name="get_player_play_type_stats",
+        arguments={
+            "play_type": "all",
+            "player_name": "Giannis",
+        }
+    )
+
+    logger.info("Giannis all play types result:")
+    logger.info(result.content[0].text[:500])  # Truncate for readability
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+
+async def test_get_player_play_type_stats_defensive(mcp_client: Client[FastMCPTransport]):
+    """Test get_player_play_type_stats for defensive stats.
+
+    Note: Defensive player synergy data may return empty results from the NBA API
+    for certain play types. An empty result is still a valid response.
+    """
+    result = await mcp_client.call_tool(
+        name="get_player_play_type_stats",
+        arguments={
+            "play_type": "Transition",
+            "offensive": False,
+        }
+    )
+
+    logger.info("Defensive transition stats result:")
+    if result.content:
+        logger.info(result.content[0].text[:500])  # Truncate for readability
+    else:
+        logger.info("Empty result (no defensive data available)")
+
+    # The tool should not error - empty results are valid for defensive stats
+    assert result.is_error is False
+
+
+# ============================================================================
+# Tests for get_player_tracking_stats
+# ============================================================================
+
+
+async def test_get_player_tracking_stats_speed_distance(mcp_client: Client[FastMCPTransport]):
+    """Test get_player_tracking_stats for speed and distance."""
+    result = await mcp_client.call_tool(
+        name="get_player_tracking_stats",
+        arguments={"track_type": "SpeedDistance"}
+    )
+
+    logger.info("Player speed/distance stats result:")
+    logger.info(result.content[0].text[:500])  # Truncate for readability
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+
+async def test_get_player_tracking_stats_with_player_filter(mcp_client: Client[FastMCPTransport]):
+    """Test get_player_tracking_stats filtered by player."""
+    result = await mcp_client.call_tool(
+        name="get_player_tracking_stats",
+        arguments={
+            "track_type": "SpeedDistance",
+            "player_name": "Ja Morant",
+        }
+    )
+
+    logger.info("Ja Morant speed/distance stats result:")
+    logger.info(result.content[0].text)
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+
+async def test_get_player_tracking_stats_drives(mcp_client: Client[FastMCPTransport]):
+    """Test get_player_tracking_stats for drive statistics."""
+    result = await mcp_client.call_tool(
+        name="get_player_tracking_stats",
+        arguments={"track_type": "Drives"}
+    )
+
+    logger.info("Player drive stats result:")
+    logger.info(result.content[0].text[:500])  # Truncate for readability
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+
+async def test_get_player_tracking_stats_passing(mcp_client: Client[FastMCPTransport]):
+    """Test get_player_tracking_stats for passing statistics.
+
+    Note: Player filtering may return empty results if the player name doesn't
+    match or if tracking data is not available for certain players.
+    """
+    result = await mcp_client.call_tool(
+        name="get_player_tracking_stats",
+        arguments={
+            "track_type": "Passing",
+            "player_name": "Nikola Jokic",
+        }
+    )
+
+    logger.info("Jokic passing stats result:")
+    if result.content:
+        logger.info(result.content[0].text)
+    else:
+        logger.info("Empty result (player filtering may not have matched)")
+
+    # The tool should not error - empty results are valid
+    assert result.is_error is False
+
+
+# ============================================================================
+# Tests for get_team_play_type_stats
+# ============================================================================
+
+
+async def test_get_team_play_type_stats_transition(mcp_client: Client[FastMCPTransport]):
+    """Test get_team_play_type_stats for transition plays."""
+    result = await mcp_client.call_tool(
+        name="get_team_play_type_stats",
+        arguments={"play_type": "Transition"}
+    )
+
+    logger.info("Team transition stats result:")
+    logger.info(result.content[0].text[:500])  # Truncate for readability
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+
+async def test_get_team_play_type_stats_with_team_filter(mcp_client: Client[FastMCPTransport]):
+    """Test get_team_play_type_stats filtered by team."""
+    result = await mcp_client.call_tool(
+        name="get_team_play_type_stats",
+        arguments={
+            "play_type": "Transition",
+            "team_name": "Warriors",
+        }
+    )
+
+    logger.info("Warriors transition stats result:")
+    logger.info(result.content[0].text)
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+    # Verify Warriors appears in the output
+    data_text = result.content[0].text
+    assert "warriors" in data_text.lower() or "Golden State" in data_text
+
+
+async def test_get_team_play_type_stats_all_types(mcp_client: Client[FastMCPTransport]):
+    """Test get_team_play_type_stats for all play types."""
+    result = await mcp_client.call_tool(
+        name="get_team_play_type_stats",
+        arguments={
+            "play_type": "all",
+            "team_name": "Bucks",
+        }
+    )
+
+    logger.info("Bucks all play types result:")
+    logger.info(result.content[0].text[:500])  # Truncate for readability
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+
+async def test_get_team_play_type_stats_defensive(mcp_client: Client[FastMCPTransport]):
+    """Test get_team_play_type_stats for defensive stats."""
+    result = await mcp_client.call_tool(
+        name="get_team_play_type_stats",
+        arguments={
+            "play_type": "Isolation",
+            "offensive": False,
+        }
+    )
+
+    logger.info("Defensive isolation stats result:")
+    logger.info(result.content[0].text[:500])  # Truncate for readability
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+
+# ============================================================================
+# Tests for get_team_tracking_stats
+# ============================================================================
+
+
+async def test_get_team_tracking_stats_passing(mcp_client: Client[FastMCPTransport]):
+    """Test get_team_tracking_stats for passing statistics."""
+    result = await mcp_client.call_tool(
+        name="get_team_tracking_stats",
+        arguments={"track_type": "Passing"}
+    )
+
+    logger.info("Team passing stats result:")
+    logger.info(result.content[0].text[:500])  # Truncate for readability
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+
+async def test_get_team_tracking_stats_with_team_filter(mcp_client: Client[FastMCPTransport]):
+    """Test get_team_tracking_stats filtered by team."""
+    result = await mcp_client.call_tool(
+        name="get_team_tracking_stats",
+        arguments={
+            "track_type": "Passing",
+            "team_name": "Celtics",
+        }
+    )
+
+    logger.info("Celtics passing stats result:")
+    logger.info(result.content[0].text)
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+    # Verify Celtics appears in the output
+    data_text = result.content[0].text
+    assert "celtics" in data_text.lower() or "Boston" in data_text
+
+
+async def test_get_team_tracking_stats_drives(mcp_client: Client[FastMCPTransport]):
+    """Test get_team_tracking_stats for drive statistics."""
+    result = await mcp_client.call_tool(
+        name="get_team_tracking_stats",
+        arguments={"track_type": "Drives"}
+    )
+
+    logger.info("Team drive stats result:")
+    logger.info(result.content[0].text[:500])  # Truncate for readability
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+
+async def test_get_team_tracking_stats_speed_distance(mcp_client: Client[FastMCPTransport]):
+    """Test get_team_tracking_stats for speed and distance."""
+    result = await mcp_client.call_tool(
+        name="get_team_tracking_stats",
+        arguments={
+            "track_type": "SpeedDistance",
+            "team_name": "Lakers",
+        }
+    )
+
+    logger.info("Lakers speed/distance stats result:")
+    logger.info(result.content[0].text)
+
+    assert result.is_error is False
+    assert len(result.content) > 0
