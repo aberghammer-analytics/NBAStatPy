@@ -207,10 +207,14 @@ def get_player_play_type_stats(
     normalized_permode = PlayTypes.PERMODE[permode_key]
 
     # Create League instance
-    league = League(season_year=season_year, playoffs=playoffs, permode=normalized_permode)
+    league = League(
+        season_year=season_year, playoffs=playoffs, permode=normalized_permode
+    )
 
     # Get synergy player data with standardization
-    df = league.get_synergy_player(play_type=play_type, offensive=offensive, standardize=True)
+    df = league.get_synergy_player(
+        play_type=play_type, offensive=offensive, standardize=True
+    )
 
     # Filter by player name if provided (case-insensitive partial match)
     if player_name:
@@ -222,7 +226,9 @@ def get_player_play_type_stats(
                 break
 
         if name_col:
-            df = df[df[name_col].str.lower().str.contains(player_name.lower(), na=False)]
+            df = df[
+                df[name_col].str.lower().str.contains(player_name.lower(), na=False)
+            ]
 
     return cast(list[dict[Any, Any]], df.to_dict(orient="records"))
 
@@ -281,7 +287,9 @@ def get_player_tracking_stats(
     normalized_permode = PlayTypes.PERMODE[permode_key]
 
     # Create League instance
-    league = League(season_year=season_year, playoffs=playoffs, permode=normalized_permode)
+    league = League(
+        season_year=season_year, playoffs=playoffs, permode=normalized_permode
+    )
 
     # Get tracking player data with standardization
     df = league.get_tracking_player(track_type=track_type, standardize=True)
@@ -296,6 +304,8 @@ def get_player_tracking_stats(
                 break
 
         if name_col:
-            df = df[df[name_col].str.lower().str.contains(player_name.lower(), na=False)]
+            df = df[
+                df[name_col].str.lower().str.contains(player_name.lower(), na=False)
+            ]
 
     return cast(list[dict[Any, Any]], df.to_dict(orient="records"))

@@ -533,9 +533,25 @@ class Team:
 
         # Columns to include as opponent stats (exclude metadata columns)
         stat_cols = [
-            "FGM", "FGA", "FG_PCT", "FG3M", "FG3A", "FG3_PCT",
-            "FTM", "FTA", "FT_PCT", "OREB", "DREB", "REB",
-            "AST", "STL", "BLK", "TOV", "PF", "PTS", "PLUS_MINUS",
+            "FGM",
+            "FGA",
+            "FG_PCT",
+            "FG3M",
+            "FG3A",
+            "FG3_PCT",
+            "FTM",
+            "FTA",
+            "FT_PCT",
+            "OREB",
+            "DREB",
+            "REB",
+            "AST",
+            "STL",
+            "BLK",
+            "TOV",
+            "PF",
+            "PTS",
+            "PLUS_MINUS",
         ]
 
         # Get opponent rows for each game
@@ -584,8 +600,12 @@ class Team:
                     game_advanced["DEF_RATING"] = team_row["defensiveRating"].values[0]
                     game_advanced["NET_RATING"] = team_row["netRating"].values[0]
                     game_advanced["PACE"] = team_row["pace"].values[0]
-                    game_advanced["EFG_PCT"] = team_row["effectiveFieldGoalPercentage"].values[0]
-                    game_advanced["TS_PCT"] = team_row["trueShootingPercentage"].values[0]
+                    game_advanced["EFG_PCT"] = team_row[
+                        "effectiveFieldGoalPercentage"
+                    ].values[0]
+                    game_advanced["TS_PCT"] = team_row["trueShootingPercentage"].values[
+                        0
+                    ]
                     game_advanced["PIE"] = team_row["PIE"].values[0]
             except Exception:
                 pass  # Skip if API call fails
@@ -599,9 +619,15 @@ class Team:
                 team_row = team_ff[team_ff["teamId"] == self.id]
 
                 if not team_row.empty:
-                    game_advanced["FT_RATE"] = team_row["freeThrowAttemptRate"].values[0]
-                    game_advanced["TOV_PCT"] = team_row["teamTurnoverPercentage"].values[0]
-                    game_advanced["OREB_PCT"] = team_row["offensiveReboundPercentage"].values[0]
+                    game_advanced["FT_RATE"] = team_row["freeThrowAttemptRate"].values[
+                        0
+                    ]
+                    game_advanced["TOV_PCT"] = team_row[
+                        "teamTurnoverPercentage"
+                    ].values[0]
+                    game_advanced["OREB_PCT"] = team_row[
+                        "offensiveReboundPercentage"
+                    ].values[0]
             except Exception:
                 pass  # Skip if API call fails
 

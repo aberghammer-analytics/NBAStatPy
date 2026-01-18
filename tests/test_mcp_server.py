@@ -54,7 +54,9 @@ async def test_server_accessible_by_client(mcp_client: Client[FastMCPTransport])
     logger.info(f"Client successfully accessed server and found {len(tools)} tools")
 
 
-async def test_multiple_client_connections(multiple_clients: list[Client[FastMCPTransport]]):
+async def test_multiple_client_connections(
+    multiple_clients: list[Client[FastMCPTransport]],
+):
     """Test that multiple clients can connect to the server simultaneously."""
     assert len(multiple_clients) == 3
 
@@ -67,7 +69,9 @@ async def test_multiple_client_connections(multiple_clients: list[Client[FastMCP
     assert all(len(result) > 0 for result in results)
     assert all(len(result) == len(results[0]) for result in results)
 
-    logger.info(f"All {len(multiple_clients)} clients successfully connected and accessed server")
+    logger.info(
+        f"All {len(multiple_clients)} clients successfully connected and accessed server"
+    )
 
 
 # ============================================================================
@@ -81,10 +85,19 @@ async def test_all_tools_registered(mcp_client: Client[FastMCPTransport]):
 
     tool_names = [tool.name for tool in tools]
     expected_tools = [
+        # Player tools
         "get_player_salary",
         "get_player_game_logs",
+        "get_player_career_stats",
+        "get_player_play_type_stats",
+        "get_player_tracking_stats",
+        # League tools
         "get_league_leaders",
+        # Team tools
         "get_team_recent_games",
+        "get_team_play_type_stats",
+        "get_team_tracking_stats",
+        # Game tools
         "get_recent_games_summary",
         "get_recent_games_player_stats",
     ]
@@ -94,7 +107,9 @@ async def test_all_tools_registered(mcp_client: Client[FastMCPTransport]):
     for expected_tool in expected_tools:
         assert expected_tool in tool_names
 
-    logger.info(f"All {len(expected_tools)} expected tools are registered: {tool_names}")
+    logger.info(
+        f"All {len(expected_tools)} expected tools are registered: {tool_names}"
+    )
 
 
 async def test_tool_registration_count_by_module(mcp_client: Client[FastMCPTransport]):
@@ -102,23 +117,32 @@ async def test_tool_registration_count_by_module(mcp_client: Client[FastMCPTrans
     tools = await mcp_client.list_tools()
     tool_names = [tool.name for tool in tools]
 
-    # player_tools should contribute 3 tools (includes get_recent_games_player_stats)
+    # player_tools should contribute 6 tools (includes get_recent_games_player_stats)
+    # get_player_salary, get_player_game_logs, get_player_career_stats,
+    # get_player_play_type_stats, get_player_tracking_stats, get_recent_games_player_stats
     player_tools = [name for name in tool_names if "player" in name]
-    assert len(player_tools) == 3
+    assert len(player_tools) == 6
 
     # league_tools should contribute 1 tool
     league_tools = [name for name in tool_names if "league" in name]
     assert len(league_tools) == 1
 
-    # team_tools should contribute 1 tool
+    # team_tools should contribute 3 tools
+    # get_team_recent_games, get_team_play_type_stats, get_team_tracking_stats
     team_tools = [name for name in tool_names if "team" in name]
-    assert len(team_tools) == 1
+    assert len(team_tools) == 3
 
     # game_tools should contribute 1 tool (get_recent_games_summary; player_stats excluded due to "player" filter)
-    game_tools = [name for name in tool_names if "game" in name and "player" not in name and "team" not in name]
+    game_tools = [
+        name
+        for name in tool_names
+        if "game" in name and "player" not in name and "team" not in name
+    ]
     assert len(game_tools) == 1
 
-    logger.info(f"Tool count by module - player: {len(player_tools)}, league: {len(league_tools)}, team: {len(team_tools)}, game: {len(game_tools)}")
+    logger.info(
+        f"Tool count by module - player: {len(player_tools)}, league: {len(league_tools)}, team: {len(team_tools)}, game: {len(game_tools)}"
+    )
 
 
 async def test_no_duplicate_tools(mcp_client: Client[FastMCPTransport]):
@@ -191,7 +215,10 @@ async def test_get_player_salary_schema(mcp_client: Client[FastMCPTransport]):
     # Check if it allows null or is in required list
     required = schema.get("required", [])
     assert "player_name" in required
-    assert "season" not in required or properties["season"].get("type") in ["string", ["string", "null"]]
+    assert "season" not in required or properties["season"].get("type") in [
+        "string",
+        ["string", "null"],
+    ]
 
     logger.info("get_player_salary schema validated")
 
@@ -248,7 +275,9 @@ async def test_get_league_leaders_schema(mcp_client: Client[FastMCPTransport]):
 async def test_get_team_recent_games_schema(mcp_client: Client[FastMCPTransport]):
     """Test the schema for get_team_recent_games tool."""
     tools = await mcp_client.list_tools()
-    team_games_tool = next(tool for tool in tools if tool.name == "get_team_recent_games")
+    team_games_tool = next(
+        tool for tool in tools if tool.name == "get_team_recent_games"
+    )
 
     schema = team_games_tool.inputSchema
     properties = schema.get("properties", {})
@@ -288,7 +317,9 @@ async def test_tool_schemas_have_required_fields(mcp_client: Client[FastMCPTrans
         if "required" in schema:
             assert isinstance(schema["required"], list)
 
-        logger.info(f"Tool '{tool.name}' has valid required/optional parameter specification")
+        logger.info(
+            f"Tool '{tool.name}' has valid required/optional parameter specification"
+        )
 
 
 # ============================================================================
@@ -315,16 +346,13 @@ async def test_concurrent_tool_calls(mcp_client: Client[FastMCPTransport]):
     # Make multiple tool calls concurrently
     calls = [
         mcp_client.call_tool(
-            name="get_league_leaders",
-            arguments={"stat_category": "PTS", "limit": 5}
+            name="get_league_leaders", arguments={"stat_category": "PTS", "limit": 5}
         ),
         mcp_client.call_tool(
-            name="get_player_salary",
-            arguments={"player_name": "LeBron James"}
+            name="get_player_salary", arguments={"player_name": "LeBron James"}
         ),
         mcp_client.call_tool(
-            name="get_league_leaders",
-            arguments={"stat_category": "REB", "limit": 5}
+            name="get_league_leaders", arguments={"stat_category": "REB", "limit": 5}
         ),
     ]
 
@@ -341,20 +369,18 @@ async def test_sequential_tool_calls(mcp_client: Client[FastMCPTransport]):
     """Test that sequential tool calls work correctly."""
     # Make several tool calls in sequence
     result1 = await mcp_client.call_tool(
-        name="get_league_leaders",
-        arguments={"stat_category": "PTS", "limit": 5}
+        name="get_league_leaders", arguments={"stat_category": "PTS", "limit": 5}
     )
     assert not result1.is_error
 
     result2 = await mcp_client.call_tool(
-        name="get_player_salary",
-        arguments={"player_name": "LeBron James"}
+        name="get_player_salary", arguments={"player_name": "LeBron James"}
     )
     assert not result2.is_error
 
     result3 = await mcp_client.call_tool(
         name="get_team_recent_games",
-        arguments={"team_abbreviation": "MIL", "last_n_games": 3}
+        arguments={"team_abbreviation": "MIL", "last_n_games": 3},
     )
     assert not result3.is_error
 
@@ -369,10 +395,7 @@ async def test_sequential_tool_calls(mcp_client: Client[FastMCPTransport]):
 async def test_invalid_tool_name(mcp_client: Client[FastMCPTransport]):
     """Test that calling a non-existent tool raises an appropriate error."""
     with pytest.raises(Exception):  # FastMCP will raise an exception for invalid tool
-        await mcp_client.call_tool(
-            name="non_existent_tool",
-            arguments={}
-        )
+        await mcp_client.call_tool(name="non_existent_tool", arguments={})
 
     logger.info("Invalid tool name raises appropriate error")
 
@@ -383,14 +406,13 @@ async def test_server_resilience_after_tool_error(mcp_client: Client[FastMCPTran
     error_result = await mcp_client.call_tool(
         name="get_player_game_logs",
         arguments={"player_name": "Invalid Player Name XYZ"},
-        raise_on_error=False
+        raise_on_error=False,
     )
     assert error_result.is_error
 
     # Now make a successful call to verify the server still works
     success_result = await mcp_client.call_tool(
-        name="get_league_leaders",
-        arguments={"stat_category": "PTS", "limit": 5}
+        name="get_league_leaders", arguments={"stat_category": "PTS", "limit": 5}
     )
     assert not success_result.is_error
 
@@ -403,7 +425,7 @@ async def test_error_messages_are_informative(mcp_client: Client[FastMCPTranspor
     result = await mcp_client.call_tool(
         name="get_player_game_logs",
         arguments={"player_name": "Invalid Player XYZ 12345"},
-        raise_on_error=False
+        raise_on_error=False,
     )
 
     assert result.is_error
@@ -411,30 +433,35 @@ async def test_error_messages_are_informative(mcp_client: Client[FastMCPTranspor
 
     # Error message should be informative
     assert len(error_text) > 0
-    assert "not found" in error_text.lower() or "invalid" in error_text.lower() or "error" in error_text.lower()
+    assert (
+        "not found" in error_text.lower()
+        or "invalid" in error_text.lower()
+        or "error" in error_text.lower()
+    )
 
     logger.info(f"Error message is informative: {error_text[:100]}")
 
 
-async def test_concurrent_access_with_errors(multiple_clients: list[Client[FastMCPTransport]]):
+async def test_concurrent_access_with_errors(
+    multiple_clients: list[Client[FastMCPTransport]],
+):
     """Test that one client's error doesn't affect other clients."""
     # First client makes a successful call
     success_call = multiple_clients[0].call_tool(
-        name="get_league_leaders",
-        arguments={"stat_category": "PTS", "limit": 5}
+        name="get_league_leaders", arguments={"stat_category": "PTS", "limit": 5}
     )
 
     # Second client makes an error call
     error_call = multiple_clients[1].call_tool(
         name="get_player_game_logs",
         arguments={"player_name": "Invalid Player Name"},
-        raise_on_error=False
+        raise_on_error=False,
     )
 
     # Third client makes another successful call
     success_call2 = multiple_clients[2].call_tool(
         name="get_team_recent_games",
-        arguments={"team_abbreviation": "MIL", "last_n_games": 3}
+        arguments={"team_abbreviation": "MIL", "last_n_games": 3},
     )
 
     # Execute all concurrently

@@ -10,3 +10,12 @@ from nbastatpy.mcp.tools import (  # noqa: E402, F401
     player_tools,
     team_tools,
 )
+
+
+def main():
+    """Entry point for the MCP server."""
+    mcp.run()
+
+
+if __name__ == "__main__":
+    main()

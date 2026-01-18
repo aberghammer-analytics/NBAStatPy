@@ -139,7 +139,9 @@ def get_recent_games_summary(
 
         # Build matchup string
         if home_team_data and away_team_data:
-            matchup_str = f"{home_team_data['abbreviation']} vs. {away_team_data['abbreviation']}"
+            matchup_str = (
+                f"{home_team_data['abbreviation']} vs. {away_team_data['abbreviation']}"
+            )
         else:
             matchup_str = game_rows["matchup"].iloc[0]
 

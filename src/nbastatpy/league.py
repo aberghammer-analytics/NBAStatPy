@@ -525,7 +525,10 @@ class League:
         return self.player_estimated_metrics
 
     def get_synergy_player(
-        self, play_type: str = "Transition", offensive: bool = True, standardize: bool = False
+        self,
+        play_type: str = "Transition",
+        offensive: bool = True,
+        standardize: bool = False,
     ) -> pd.DataFrame:
         """
         Retrieves synergy data for a specific play type and offensive/defensive category.
@@ -585,7 +588,10 @@ class League:
         return self.synergy
 
     def get_synergy_team(
-        self, play_type: str = "Transition", offensive: bool = True, standardize: bool = False
+        self,
+        play_type: str = "Transition",
+        offensive: bool = True,
+        standardize: bool = False,
     ) -> pd.DataFrame:
         """
         Retrieves synergy data for a specific play type and team.
@@ -873,10 +879,14 @@ class League:
         ).get_data_frames()[0]
 
         # Sort by the requested stat category and get top N
-        df = df.sort_values(by=stat_abbrev, ascending=False).head(limit).reset_index(drop=True)
+        df = (
+            df.sort_values(by=stat_abbrev, ascending=False)
+            .head(limit)
+            .reset_index(drop=True)
+        )
 
         # Add RANK column to match LeagueLeaders format
-        df.insert(0, 'RANK', range(1, len(df) + 1))
+        df.insert(0, "RANK", range(1, len(df) + 1))
 
         if standardize:
             df = standardize_dataframe(

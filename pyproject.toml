@@ -20,6 +20,9 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 
+[project.scripts]
+nbastatpy-mcp = "nbastatpy.mcp.server:main"
+
 
 [dependency-groups]
 dev = [

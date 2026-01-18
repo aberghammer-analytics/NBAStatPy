@@ -31,7 +31,9 @@ def get_league_leaders(
     # Use League class for season-specific leaders
     playoffs = season_type == "Playoffs"
     league_obj = League(season_year=season, playoffs=playoffs, permode=per_mode)
-    leaders = league_obj.get_league_leaders(stat_category, limit=limit, standardize=True)
+    leaders = league_obj.get_league_leaders(
+        stat_category, limit=limit, standardize=True
+    )
 
     return cast(list[dict[Any, Any]], leaders.to_dict(orient="records"))
 
