@@ -10,14 +10,14 @@ from nba_api.stats.static import players, teams
 from PIL import Image
 
 from nbastatpy.standardize import standardize_dataframe
-from nbastatpy.utils import Formatter, PlayTypes
+from nbastatpy.utils import Formatter, MeasureTypes, PlayTypes
 
 
 class Player:
     def __init__(
         self,
         player: str,
-        season_year: str = None,
+        season_year: str | None = None,
         playoffs: bool = False,
         permode: str = "PERGAME",
     ):
@@ -81,9 +81,12 @@ class Player:
 
         return df
 
-    def get_salary(self) -> pd.DataFrame:
+    def get_salary(self, standardize: bool = False) -> pd.DataFrame:
         """
         Retrieves the salary information for a player from hoopshype.com.
+
+        Args:
+            standardize: Whether to apply data standardization
 
         Returns:
             pd.DataFrame: A DataFrame containing the salary information for the player.
@@ -96,20 +99,22 @@ class Player:
             # Get the table rows
             rows = [
                 [cell.text.strip() for cell in row.find_all("td")]
-                for row in tables[0].find_all("tr")
+                for row in tables[2].find_all("tr")
             ]
 
             rows2 = [
                 [cell.text.strip() for cell in row.find_all("td")]
-                for row in tables[1].find_all("tr")
+                for row in tables[3].find_all("tr")
             ]
 
-            projected = pd.DataFrame(rows[1:], columns=rows[0])
-            projected["Team"] = projected.columns[1]
-            projected = projected.rename(columns={projected.columns[1]: "Salary"})
+            if not rows[0]:
+                cols = ["Season", "Team", "Salary"]
+
+            projected = pd.DataFrame(rows[1:], columns=cols)
+            projected["Team"] = "Projected"
             projected["Salary_Type"] = "Projected"
 
-            historical = pd.DataFrame(rows2[1:], columns=rows2[0])
+            historical = pd.DataFrame(rows2[1:], columns=cols)
             historical["Salary_Type"] = "Historical"
 
             self.salary_df = pd.concat([projected, historical])
@@ -121,6 +126,61 @@ class Player:
                 for row in tables[0].find_all("tr")
             ]
             self.salary_df = pd.DataFrame(rows[1:], columns=rows[0])
+
+        if standardize:
+            # Make all columns lowercase
+            self.salary_df.columns = [col.lower() for col in self.salary_df.columns]
+
+            # Filter out rows where season is 'Total'
+            if "season" in self.salary_df.columns:
+                self.salary_df = self.salary_df[
+                    self.salary_df["season"].str.lower() != "total"
+                ]
+
+                # Convert season column to YYYYYYYY format
+                self.salary_df["season"] = self.salary_df["season"].apply(
+                    lambda x: Formatter.format_season_id(x) if pd.notna(x) else None
+                )
+
+            # Remove repeated team name suffix
+            if "team" in self.salary_df.columns:
+
+                def remove_duplicate_suffix(team_name):
+                    if pd.isna(team_name) or team_name == "":
+                        return team_name
+                    team_str = str(team_name).strip()
+                    words = team_str.split()
+                    if len(words) >= 2:
+                        # The last word will be the duplicated part (e.g., "LakersLakers")
+                        last_word = words[-1]
+                        # Check if it's even length and first half equals second half
+                        if len(last_word) % 2 == 0:
+                            mid = len(last_word) // 2
+                            if last_word[:mid] == last_word[mid:]:
+                                # Replace the duplicated word with the single version
+                                words[-1] = last_word[:mid]
+                                return " ".join(words)
+                    return team_str
+
+                self.salary_df["team"] = self.salary_df["team"].apply(
+                    remove_duplicate_suffix
+                )
+
+            # Clean and convert salary column to integer
+            if "salary" in self.salary_df.columns:
+
+                def clean_salary(salary_value):
+                    if pd.isna(salary_value) or salary_value == "":
+                        return None
+                    # Remove all non-numeric characters except digits
+                    import re
+
+                    numeric_only = re.sub(r"[^\d]", "", str(salary_value))
+                    if numeric_only:
+                        return int(numeric_only)
+                    return None
+
+                self.salary_df["salary"] = self.salary_df["salary"].apply(clean_salary)
 
         return self.salary_df
 
@@ -155,6 +215,61 @@ class Player:
             self.season_totals = df_list[0]
 
         return self.season_totals, self.career_totals
+
+    def get_career_stats_by_year(
+        self,
+        measure_type: str = "Base",
+        per_mode: str | None = None,
+        standardize: bool = False,
+    ) -> pd.DataFrame:
+        """Get career statistics broken down by season with flexible stat types and per-modes.
+
+        Unlike get_season_career_totals() which only supports basic stats with limited
+        per-modes, this method supports advanced statistics and all per-mode options
+        including Per100Possessions.
+
+        Args:
+            measure_type: Type of statistics to include:
+                - "Base": Traditional stats (PTS, REB, AST, etc.)
+                - "Advanced": Advanced metrics (TS_PCT, OFF_RATING, DEF_RATING, etc.)
+                - "Misc": Miscellaneous stats
+                - "Scoring": Scoring breakdown stats
+                - "Usage": Usage statistics
+            per_mode: How to calculate statistics:
+                - "PerGame": Per game averages (default)
+                - "Per36": Per 36 minutes
+                - "Per100Possessions": Per 100 possessions
+                - "Totals": Raw totals
+                If None, uses instance's permode setting.
+            standardize: Whether to apply data standardization.
+
+        Returns:
+            pd.DataFrame: Season-by-season career statistics.
+        """
+        # Normalize measure_type
+        measure_key = (
+            measure_type.replace("_", "").replace("-", "").replace(" ", "").upper()
+        )
+        if measure_key not in MeasureTypes.TYPES:
+            valid = sorted(set(MeasureTypes.TYPES.values()))
+            raise ValueError(f"Invalid measure_type '{measure_type}'. Valid: {valid}")
+        normalized_measure = MeasureTypes.TYPES[measure_key]
+
+        # Use provided per_mode or fall back to instance setting
+        actual_permode = per_mode if per_mode else self.permode
+
+        df = nba.PlayerDashboardByYearOverYear(
+            player_id=self.id,
+            measure_type_detailed=normalized_measure,
+            per_mode_detailed=actual_permode,
+            season_type_playoffs=self.season_type,
+        ).get_data_frames()[1]  # Index 1 = ByYearPlayerDashboard
+
+        if standardize:
+            df = standardize_dataframe(df, data_type="player")
+
+        self.career_stats_by_year = df
+        return self.career_stats_by_year
 
     def get_splits(self) -> pd.DataFrame:
         """Gets all splits for a given season"""
@@ -258,6 +373,77 @@ class Player:
 
         self.games_boxscore = df
         return self.games_boxscore
+
+    def get_game_logs(
+        self,
+        last_n_games: int | None = None,
+        measure_type: str = "Base",
+        per_mode: str | None = None,
+        standardize: bool = False,
+    ) -> pd.DataFrame:
+        """
+        Retrieves detailed game logs for the player with configurable stat types.
+
+        Args:
+            last_n_games: Number of most recent games to retrieve.
+                          If None, returns all games for the season.
+            measure_type: Type of statistics to include:
+                          - "Base": Traditional stats (PTS, REB, AST, etc.)
+                          - "Advanced": Advanced metrics (OFF_RATING, DEF_RATING, TS_PCT, etc.)
+                          - "Misc": Miscellaneous stats
+                          - "Scoring": Scoring breakdown stats
+                          - "Usage": Usage statistics
+            per_mode: How to calculate statistics:
+                      - "PerGame": Per game averages (default)
+                      - "Per36": Per 36 minutes
+                      - "Per100Possessions": Per 100 possessions
+                      - "PerMinute": Per minute
+                      - "Totals": Raw totals
+                      If None, uses instance's permode setting.
+            standardize: Whether to apply data standardization.
+
+        Returns:
+            pd.DataFrame: Game logs with the requested statistics.
+                          When standardize=True, column names are lowercase.
+                          When standardize=False, column names are uppercase (as returned by API).
+        """
+        # Validate last_n_games parameter
+        if last_n_games is not None and (last_n_games < 1 or last_n_games > 82):
+            raise ValueError(
+                f"last_n_games must be between 1 and 82, got {last_n_games}"
+            )
+
+        # Normalize measure_type
+        measure_key = (
+            measure_type.replace("_", "").replace("-", "").replace(" ", "").upper()
+        )
+        if measure_key not in MeasureTypes.TYPES:
+            valid = sorted(set(MeasureTypes.TYPES.values()))
+            raise ValueError(f"Invalid measure_type '{measure_type}'. Valid: {valid}")
+        normalized_measure = MeasureTypes.TYPES[measure_key]
+
+        # Use provided per_mode or fall back to instance setting
+        actual_permode = per_mode if per_mode else self.permode
+
+        df = nba.PlayerGameLogs(
+            player_id_nullable=self.id,
+            season_nullable=self.season,
+            season_type_nullable=self.season_type,
+            measure_type_player_game_logs_nullable=normalized_measure,
+            per_mode_simple_nullable=actual_permode,
+            last_n_games_nullable=last_n_games,
+        ).get_data_frames()[0]
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="player",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.game_logs = df
+        return self.game_logs
 
     def get_matchups(self, defense: bool = False) -> pd.DataFrame:
         """

@@ -7,13 +7,13 @@ from bs4 import BeautifulSoup
 from rich.progress import track
 
 from nbastatpy.standardize import standardize_dataframe
-from nbastatpy.utils import Formatter, PlayTypes
+from nbastatpy.utils import Formatter, LeaderStats, PlayTypes
 
 
-class Season:
+class League:
     def __init__(self, season_year=None, playoffs=False, permode: str = "PERGAME"):
         """
-        Initialize a Season object.
+        Initialize a League object.
 
         Args:
             season_year (int | str, optional): The year of the season. Can be provided in various formats:
@@ -86,7 +86,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -114,7 +114,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -141,7 +141,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -168,7 +168,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -195,7 +195,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -222,7 +222,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -249,7 +249,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -276,7 +276,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -303,7 +303,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -330,7 +330,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -357,7 +357,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -384,7 +384,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -411,7 +411,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -437,7 +437,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -463,7 +463,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -490,7 +490,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -516,7 +516,7 @@ class Season:
         if standardize:
             df = standardize_dataframe(
                 df,
-                data_type="season",
+                data_type="league",
                 season=self.season,
                 playoffs=(self.season_type == "Playoffs"),
             )
@@ -525,14 +525,20 @@ class Season:
         return self.player_estimated_metrics
 
     def get_synergy_player(
-        self, play_type: str = "Transition", offensive: bool = True
+        self,
+        play_type: str = "Transition",
+        offensive: bool = True,
+        standardize: bool = False,
     ) -> pd.DataFrame:
         """
         Retrieves synergy data for a specific play type and offensive/defensive category.
 
         Args:
             play_type (str, optional): The play type to retrieve synergy data for. Defaults to "Transition".
+                Options: "Transition", "Isolation", "PRBallHandler", "PRRollman", "Postup", "Spotup",
+                "Handoff", "Cut", "OffScreen", "OffRebound", "Misc", or "all" for all types.
             offensive (bool, optional): Specifies whether to retrieve offensive or defensive synergy data. Defaults to True.
+            standardize (bool, optional): Whether to apply data standardization. Defaults to False.
 
         Returns:
             pd.DataFrame: The synergy data as a pandas DataFrame.
@@ -571,17 +577,31 @@ class Season:
 
             self.synergy = pd.concat(df_list)
 
+        if standardize:
+            self.synergy = standardize_dataframe(
+                self.synergy,
+                data_type="league",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
         return self.synergy
 
     def get_synergy_team(
-        self, play_type: str = "Transition", offensive: bool = True
+        self,
+        play_type: str = "Transition",
+        offensive: bool = True,
+        standardize: bool = False,
     ) -> pd.DataFrame:
         """
         Retrieves synergy data for a specific play type and team.
 
         Args:
             play_type (str, optional): The play type to retrieve synergy data for. Defaults to "Transition".
+                Options: "Transition", "Isolation", "PRBallHandler", "PRRollman", "Postup", "Spotup",
+                "Handoff", "Cut", "OffScreen", "OffRebound", "Misc", or "all" for all types.
             offensive (bool, optional): Determines whether to retrieve offensive or defensive synergy data. Defaults to True.
+            standardize (bool, optional): Whether to apply data standardization. Defaults to False.
 
         Returns:
             pd.DataFrame: A DataFrame containing the synergy data.
@@ -624,17 +644,30 @@ class Season:
 
             self.synergy = pd.concat(df_list)
 
+        if standardize:
+            self.synergy = standardize_dataframe(
+                self.synergy,
+                data_type="league",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
         return self.synergy
 
     def get_tracking_player(
         self,
         track_type: str = "Efficiency",
+        standardize: bool = False,
     ) -> pd.DataFrame:
         """
         Retrieves tracking data for players based on the specified track type.
 
         Parameters:
             track_type (str): The type of tracking data to retrieve. Defaults to "Efficiency".
+                Options: "SpeedDistance", "Possessions", "CatchShoot", "PullUpShot", "Defense",
+                "Drives", "Passing", "ElbowTouch", "PostTouch", "PaintTouch", "Efficiency",
+                or "all" for all types.
+            standardize (bool): Whether to apply data standardization. Defaults to False.
 
         Returns:
             pd.DataFrame: A DataFrame containing the tracking data for players.
@@ -667,20 +700,33 @@ class Season:
 
             self.tracking = pd.concat(df_list)
 
+        if standardize:
+            self.tracking = standardize_dataframe(
+                self.tracking,
+                data_type="league",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
         return self.tracking
 
     def get_tracking_team(
         self,
         track_type: str = "Efficiency",
+        standardize: bool = False,
     ) -> pd.DataFrame:
         """
-        Retrieves tracking data for a specific play type and returns it as a pandas DataFrame.
+        Retrieves tracking data for teams based on the specified track type.
 
         Parameters:
-            track_type (str): The play type to track. Defaults to "Efficiency".
+            track_type (str): The type of tracking data to retrieve. Defaults to "Efficiency".
+                Options: "SpeedDistance", "Possessions", "CatchShoot", "PullUpShot", "Defense",
+                "Drives", "Passing", "ElbowTouch", "PostTouch", "PaintTouch", "Efficiency",
+                or "all" for all types.
+            standardize (bool): Whether to apply data standardization. Defaults to False.
 
         Returns:
-            pd.DataFrame: The tracking data as a pandas DataFrame.
+            pd.DataFrame: A DataFrame containing the tracking data for teams.
         """
         self.play_type = Formatter.check_playtype(track_type, PlayTypes.TRACKING_TYPES)
 
@@ -707,6 +753,14 @@ class Season:
                 sleep(1)
 
             self.tracking = pd.concat(df_list)
+
+        if standardize:
+            self.tracking = standardize_dataframe(
+                self.tracking,
+                data_type="league",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
 
         return self.tracking
 
@@ -793,8 +847,60 @@ class Season:
 
         return self.defense
 
+    def get_league_leaders(
+        self, stat_category: str, limit: int = 25, standardize: bool = False
+    ) -> pd.DataFrame:
+        """
+        Retrieves league leaders for a specific statistic for the season.
+
+        Args:
+            stat_category: Statistic to rank by (e.g., "PTS", "points", "REB", "rebounds",
+                "AST", "assists", "STL", "BLK", "FG_PCT", "FG3_PCT").
+            limit: Maximum number of leaders to return. Defaults to 25.
+            standardize: Whether to apply data standardization. Defaults to False.
+
+        Returns:
+            pd.DataFrame: The league leaders data for the specified statistic.
+        """
+        # Normalize stat category
+        stat_key = (
+            stat_category.replace("_", "").replace("-", "").replace(" ", "").upper()
+        )
+        if stat_key not in LeaderStats.STAT_CATEGORIES:
+            valid = sorted(set(LeaderStats.STAT_CATEGORIES.values()))
+            raise ValueError(f"Invalid stat_category '{stat_category}'. Valid: {valid}")
+        stat_abbrev = LeaderStats.STAT_CATEGORIES[stat_key]
+
+        # Use LeagueDashPlayerStats instead of LeagueLeaders for better historical season support
+        df = nba.LeagueDashPlayerStats(
+            season=self.season,
+            per_mode_detailed=self.permode,
+            season_type_all_star=self.season_type,
+        ).get_data_frames()[0]
+
+        # Sort by the requested stat category and get top N
+        df = (
+            df.sort_values(by=stat_abbrev, ascending=False)
+            .head(limit)
+            .reset_index(drop=True)
+        )
+
+        # Add RANK column to match LeagueLeaders format
+        df.insert(0, "RANK", range(1, len(df) + 1))
+
+        if standardize:
+            df = standardize_dataframe(
+                df,
+                data_type="league",
+                season=self.season,
+                playoffs=(self.season_type == "Playoffs"),
+            )
+
+        self.league_leaders = df
+        return self.league_leaders
+
 
 if __name__ == "__main__":
-    seas = Season(season_year="2004")
+    seas = League(season_year="2004")
     print(seas.permode)
     print(seas.get_salaries())

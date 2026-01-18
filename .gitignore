@@ -162,3 +162,5 @@ cython_debug/
 .DS_Store
 .scratch/
 .vscode/
+.claude/
+TODO.md

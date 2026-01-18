@@ -10,11 +10,9 @@ jobs:
   pypi-publish:
     name: Publish release to PyPI
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/nbastatpy
     permissions:
       id-token: write
+      contents: read
 
     steps:
       - uses: actions/checkout@v4

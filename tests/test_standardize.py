@@ -4,7 +4,7 @@ from nbastatpy.standardize import (
     DataStandardizer,
     GameDataStandardizer,
     PlayerDataStandardizer,
-    SeasonDataStandardizer,
+    LeagueDataStandardizer,
     TeamDataStandardizer,
     standardize_dataframe,
 )
@@ -123,21 +123,21 @@ class TestGameDataStandardizer:
         assert standardizer.df["clock_seconds"].iloc[0] == 683  # 11*60 + 23
 
 
-class TestSeasonDataStandardizer:
+class TestLeagueDataStandardizer:
     """Test the SeasonDataStandardizer class."""
 
     def test_add_season_id(self):
-        """Test that season_id is added."""
+        """Test that season_id is added in YYYYYYYY format."""
         df = pd.DataFrame({"player_id": [123]})
-        standardizer = SeasonDataStandardizer(df, season="2023-24")
+        standardizer = LeagueDataStandardizer(df, season="2023-24")
         standardizer.add_season_id()
         assert "season_id" in standardizer.df.columns
-        assert standardizer.df["season_id"].iloc[0] == "2023-24"
+        assert standardizer.df["season_id"].iloc[0] == "20232024"
 
     def test_add_playoff_flag(self):
         """Test that playoff flag is added."""
         df = pd.DataFrame({"player_id": [123]})
-        standardizer = SeasonDataStandardizer(df, playoffs=True)
+        standardizer = LeagueDataStandardizer(df, playoffs=True)
         standardizer.add_playoff_flag()
         assert "is_playoffs" in standardizer.df.columns
         assert standardizer.df["is_playoffs"].iloc[0] == "PLAYOFFS"
@@ -145,7 +145,7 @@ class TestSeasonDataStandardizer:
     def test_parse_game_dates(self):
         """Test game date parsing."""
         df = pd.DataFrame({"game_date": ["2024-01-15", "2024-02-20"]})
-        standardizer = SeasonDataStandardizer(df)
+        standardizer = LeagueDataStandardizer(df)
         standardizer.parse_game_dates()
         assert pd.api.types.is_object_dtype(
             standardizer.df["game_date"]
@@ -204,7 +204,7 @@ class TestStandardizeDataframe:
             }
         )
         result = standardize_dataframe(
-            df, data_type="season", season="2023-24", playoffs=True
+            df, data_type="league", season="2023-24", playoffs=True
         )
         assert "season_id" in result.columns
         assert "is_playoffs" in result.columns
@@ -235,3 +235,46 @@ class TestStandardizeDataframe:
         result = standardize_dataframe(df, data_type="base")
         assert all(col.islower() for col in result.columns)
         assert result["player_id"].iloc[0] == "0000000123"
+
+    def test_standardize_existing_season_id_format(self):
+        """Test that existing season_id columns are reformatted to YYYYYYYY."""
+        df = pd.DataFrame(
+            {
+                "PLAYER_ID": [123, 456],
+                "SEASON_ID": ["2022-23", "22-23"],
+                "PTS": [25, 30],
+            }
+        )
+        result = standardize_dataframe(df, data_type="league", season="2023-24")
+        assert "season_id" in result.columns
+        # Both rows should be reformatted to YYYYYYYY format
+        assert result["season_id"].iloc[0] == "20222023"
+        assert result["season_id"].iloc[1] == "20222023"
+
+    def test_add_season_id_when_missing(self):
+        """Test that season_id is added when it doesn't exist."""
+        df = pd.DataFrame(
+            {
+                "PLAYER_ID": [123],
+                "PTS": [25],
+            }
+        )
+        result = standardize_dataframe(df, data_type="player", season="2023-24")
+        assert "season_id" in result.columns
+        assert result["season_id"].iloc[0] == "20232024"
+
+    def test_season_id_various_formats(self):
+        """Test that various season ID formats are standardized correctly."""
+        df = pd.DataFrame(
+            {
+                "PLAYER_ID": [1, 2, 3, 4],
+                "SEASON_ID": ["2023-24", "2022-23", 20222023, "23-24"],
+                "PTS": [25, 30, 28, 22],
+            }
+        )
+        result = standardize_dataframe(df, data_type="league")
+        assert "season_id" in result.columns
+        assert result["season_id"].iloc[0] == "20232024"
+        assert result["season_id"].iloc[1] == "20222023"
+        assert result["season_id"].iloc[2] == "20222023"
+        assert result["season_id"].iloc[3] == "20232024"
