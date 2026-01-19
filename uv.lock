@@ -1359,7 +1359,7 @@ wheels = [
 
 [[package]]
 name = "nbastatpy"
-version = "0.1.8"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "bs4" },

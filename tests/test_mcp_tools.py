@@ -2,6 +2,9 @@
 
 Reduced test suite for reliable CI. Each tool has one basic happy path test,
 with error handling consolidated into parametrized tests.
+
+All external API calls are mocked via conftest.py fixtures to prevent timeouts
+and ensure reliable testing.
 """
 
 import pytest

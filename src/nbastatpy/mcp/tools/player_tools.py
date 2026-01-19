@@ -13,7 +13,7 @@ def get_player_salary(player_name: str, season: str | None = None) -> list[dict]
         player_name: Player name (e.g., "LeBron James", "Giannis")
         season: Filter to specific season (e.g., "2024", "2023-24", "20232024"). Returns all seasons if not provided.
     """
-    season = Formatter.normalize_season(season) if season else None
+    season = Formatter.format_season(season) if season else None
 
     player = Player(player_name)
     salary = player.get_salary(standardize=True)
