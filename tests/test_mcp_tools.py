@@ -211,7 +211,9 @@ async def test_get_team_tracking_stats(mcp_client: Client[FastMCPTransport]):
 # ============================================================================
 
 
-async def test_get_player_game_logs_invalid_player(mcp_client: Client[FastMCPTransport]):
+async def test_get_player_game_logs_invalid_player(
+    mcp_client: Client[FastMCPTransport],
+):
     """Test error handling for non-existent player."""
     result = await mcp_client.call_tool(
         name="get_player_game_logs",
@@ -243,7 +245,9 @@ async def test_get_player_game_logs_invalid_last_n_games(
     assert "last_n_games must be between 1 and 82" in result.content[0].text
 
 
-async def test_get_recent_games_summary_invalid_days(mcp_client: Client[FastMCPTransport]):
+async def test_get_recent_games_summary_invalid_days(
+    mcp_client: Client[FastMCPTransport],
+):
     """Test error handling for invalid last_n_days value."""
     result = await mcp_client.call_tool(
         name="get_recent_games_summary",
@@ -258,7 +262,9 @@ async def test_get_recent_games_summary_invalid_days(mcp_client: Client[FastMCPT
     assert "last_n_days must be between 1 and 365" in result.content[0].text
 
 
-async def test_get_player_career_stats_invalid_player(mcp_client: Client[FastMCPTransport]):
+async def test_get_player_career_stats_invalid_player(
+    mcp_client: Client[FastMCPTransport],
+):
     """Test error handling for non-existent player in career stats."""
     result = await mcp_client.call_tool(
         name="get_player_career_stats",
