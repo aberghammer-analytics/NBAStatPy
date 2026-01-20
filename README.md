@@ -37,11 +37,56 @@ from nbastatpy.standardize import standardize_dataframe
 df = standardize_dataframe(df, data_type='player')
 ```
 
-## MCP Integration (AI Assistant Tools)
+## MCP Server
 
-NBAStatPy includes a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that allows AI assistants like Claude to access NBA data directly.
+NBAStatPy includes a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that allows AI assistants like Claude to access NBA statistics data.
+
+### Quick Start (No Installation Required)
+
+Using [uvx](https://docs.astral.sh/uv/), you can run the MCP server directly without installing:
+
+```bash
+uvx nbastatpy
+```
+
+### Adding to Claude Code
+
+**Option 1: CLI Command (Recommended)**
+```bash
+claude mcp add nbastatpy -- uvx nbastatpy
+```
+
+**Option 2: Manual Configuration**
+
+Add to your `~/.claude.json` (user-level) or `.mcp.json` (project-level):
+
+```json
+{
+  "mcpServers": {
+    "nbastatpy": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["nbastatpy"]
+    }
+  }
+}
+```
+
+**Option 3: With pip install**
+```json
+{
+  "mcpServers": {
+    "nbastatpy": {
+      "command": "python",
+      "args": ["-m", "nbastatpy.mcp.server"]
+    }
+  }
+}
+```
 
 ### Available Tools
+
+The MCP server provides tools for accessing NBA data:
 
 | Tool | Description |
 |------|-------------|
@@ -56,47 +101,6 @@ NBAStatPy includes a [Model Context Protocol (MCP)](https://modelcontextprotocol
 | `get_team_tracking_stats` | Get tracking stats for a team |
 | `get_recent_games_summary` | Get summary of recent NBA games |
 | `get_recent_games_player_stats` | Get player stats from recent games |
-
-### Claude Code Integration
-
-Add to your Claude Code MCP settings (`~/.claude/settings.json`):
-
-```json
-{
-  "mcpServers": {
-    "nbastatpy": {
-      "command": "uvx",
-      "args": ["--from", "nbastatpy", "nbastatpy-mcp"]
-    }
-  }
-}
-```
-
-Or with pip:
-
-```json
-{
-  "mcpServers": {
-    "nbastatpy": {
-      "command": "python",
-      "args": ["-m", "nbastatpy.mcp.server"]
-    }
-  }
-}
-```
-
-### Running the MCP Server Manually
-
-```bash
-# With uvx (recommended)
-uvx --from nbastatpy nbastatpy-mcp
-
-# With uv
-uv run python -m nbastatpy.mcp.server
-
-# With pip install
-python -m nbastatpy.mcp.server
-```
 
 ## Installation
 
