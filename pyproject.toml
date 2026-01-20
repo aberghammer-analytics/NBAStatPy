@@ -21,7 +21,7 @@ classifiers = [
 ]
 
 [project.scripts]
-nbastatpy-mcp = "nbastatpy.mcp.server:main"
+nbastatpy = "nbastatpy.mcp.server:main"
 
 
 [dependency-groups]
