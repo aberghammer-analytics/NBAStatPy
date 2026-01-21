@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.4.1](https://github.com/aberghammer-analytics/NBAStatPy/compare/nbastatpy-v0.4.0...nbastatpy-v0.4.1) (2026-01-20)
+
+
+### Features
+
+* Add 6 new MCP tools: get_player_info, get_team_roster, get_game_boxscore, get_game_playbyplay, get_league_player_stats, get_league_team_stats
+* Add input validation with descriptive error messages via Validators class
+* Add RateLimiter class for centralized API rate limiting
+* Add _get_player_teams_for_season() helper to reduce code duplication
+* Modernize type hints to Python 3.10+ syntax
+
+
+### Bug Fixes
+
+* Fix undefined variable `team.id` → `self.id` in team.py get_player_onoff()
+* Fix undefined `cols` variable in player.py get_salary()
+
 ## [0.4.0](https://github.com/aberghammer-analytics/NBAStatPy/compare/nbastatpy-v0.3.0...nbastatpy-v0.4.0) (2026-01-20)
 
 
