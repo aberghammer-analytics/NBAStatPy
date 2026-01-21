@@ -808,3 +808,91 @@ def mock_league_dash_team_stats(mocker):
         "nba_api.stats.endpoints.LeagueDashTeamStats", return_value=mock_response
     )
     return mock_df
+
+
+@pytest.fixture(autouse=True)
+def mock_live_scoreboard(mocker):
+    """Mock live scoreboard API call for get_live_games."""
+    mock_data = {
+        "scoreboard": {
+            "games": [
+                {
+                    "gameId": "0022400500",
+                    "gameStatus": 2,
+                    "gameStatusText": "Q3 4:49",
+                    "period": 3,
+                    "gameClock": "PT04M49.00S",
+                    "homeTeam": {
+                        "teamId": 1610612741,
+                        "teamTricode": "CHI",
+                        "teamCity": "Chicago",
+                        "teamName": "Bulls",
+                        "score": 84,
+                        "wins": 20,
+                        "losses": 22,
+                    },
+                    "awayTeam": {
+                        "teamId": 1610612746,
+                        "teamTricode": "LAC",
+                        "teamCity": "LA",
+                        "teamName": "Clippers",
+                        "score": 74,
+                        "wins": 19,
+                        "losses": 23,
+                    },
+                    "gameLeaders": {
+                        "homeLeaders": {
+                            "personId": 203897,
+                            "name": "Nikola Vucevic",
+                            "points": 12,
+                            "rebounds": 8,
+                            "assists": 3,
+                        },
+                        "awayLeaders": {
+                            "personId": 1628381,
+                            "name": "John Collins",
+                            "points": 23,
+                            "rebounds": 5,
+                            "assists": 1,
+                        },
+                    },
+                },
+                {
+                    "gameId": "0022400501",
+                    "gameStatus": 1,
+                    "gameStatusText": "7:00 PM ET",
+                    "period": 0,
+                    "gameClock": "",
+                    "homeTeam": {
+                        "teamId": 1610612747,
+                        "teamTricode": "LAL",
+                        "teamCity": "Los Angeles",
+                        "teamName": "Lakers",
+                        "score": 0,
+                        "wins": 25,
+                        "losses": 19,
+                    },
+                    "awayTeam": {
+                        "teamId": 1610612738,
+                        "teamTricode": "BOS",
+                        "teamCity": "Boston",
+                        "teamName": "Celtics",
+                        "score": 0,
+                        "wins": 32,
+                        "losses": 14,
+                    },
+                    "gameLeaders": {
+                        "homeLeaders": {},
+                        "awayLeaders": {},
+                    },
+                },
+            ]
+        }
+    }
+    mock_scoreboard = MagicMock()
+    mock_scoreboard.get_dict.return_value = mock_data
+    mocker.patch(
+        "nba_api.live.nba.endpoints.scoreboard.ScoreBoard",
+        return_value=mock_scoreboard,
+    )
+    return mock_data

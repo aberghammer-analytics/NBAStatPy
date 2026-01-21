@@ -382,3 +382,130 @@ def get_game_playbyplay(
             pbp_df = pbp_df[pbp_df[period_col] == period]
 
     return cast(list[dict[Any, Any]], pbp_df.to_dict(orient="records"))
+
+
+def _format_leader(leader: dict) -> dict | None:
+    """Format game leader data for output.
+
+    Args:
+        leader: Leader dictionary from live scoreboard API
+
+    Returns:
+        Formatted leader dict with name and stats, or None if no data
+    """
+    if not leader or not leader.get("name"):
+        return None
+    return {
+        "name": leader.get("name"),
+        "player_id": leader.get("personId"),
+        "points": leader.get("points"),
+        "rebounds": leader.get("rebounds"),
+        "assists": leader.get("assists"),
+    }
+
+
+@mcp.tool()
+def get_live_games(
+    team_abbreviation: str | None = None,
+    include_boxscore: bool = False,
+    stat_type: str = "summary",
+) -> list[dict]:
+    """Get live/current NBA games with scores and status.
+
+    Returns real-time information about today's NBA games including
+    scores, game status, and optionally detailed player statistics.
+
+    Use this tool to answer questions like "What NBA games are on right now?"
+    or "What's the score of the Lakers game?"
+
+    Args:
+        team_abbreviation: Optional NBA team abbreviation to filter results
+            (e.g., "LAL", "BOS", "MIL"). If provided, only returns games
+            involving that team.
+        include_boxscore: Whether to include detailed player statistics.
+            When True, fetches live boxscore data for each game.
+            Defaults to False for faster response.
+        stat_type: Type of boxscore data to include when include_boxscore=True.
+            Options: "summary" (default), "traditional", "advanced", "all".
+
+    Returns:
+        List of game dictionaries, each containing:
+        - game_id: NBA game identifier
+        - game_status: Human-readable status ("In Progress", "Final", "7:00 PM ET")
+        - game_status_code: Status integer (1=Scheduled, 2=In Progress, 3=Completed)
+        - period: Current period number (if in progress)
+        - game_clock: Time remaining in period (if in progress)
+        - home_team: {abbreviation, name, score, record}
+        - away_team: {abbreviation, name, score, record}
+        - game_leaders: Top performers for each team (if available)
+        - boxscore: Detailed player stats (if include_boxscore=True)
+
+    Examples:
+        - Get all live games: get_live_games()
+        - Get Lakers game: get_live_games(team_abbreviation="LAL")
+        - Get game with detailed stats: get_live_games(team_abbreviation="BOS", include_boxscore=True)
+    """
+    from nba_api.live.nba.endpoints import scoreboard
+
+    # Get today's scoreboard
+    sb = scoreboard.ScoreBoard()
+    data = sb.get_dict()
+    games = data.get("scoreboard", {}).get("games", [])
+
+    # Filter by team if specified
+    if team_abbreviation:
+        team_upper = team_abbreviation.upper()
+        games = [
+            g
+            for g in games
+            if g.get("homeTeam", {}).get("teamTricode") == team_upper
+            or g.get("awayTeam", {}).get("teamTricode") == team_upper
+        ]
+
+    results = []
+    for game in games:
+        home_team = game.get("homeTeam", {})
+        away_team = game.get("awayTeam", {})
+
+        game_dict: dict[str, Any] = {
+            "game_id": game.get("gameId"),
+            "game_status": game.get("gameStatusText", ""),
+            "game_status_code": game.get("gameStatus"),
+            "period": game.get("period"),
+            "game_clock": game.get("gameClock"),
+            "home_team": {
+                "abbreviation": home_team.get("teamTricode"),
+                "name": f"{home_team.get('teamCity')} {home_team.get('teamName')}",
+                "score": home_team.get("score"),
+                "record": f"{home_team.get('wins')}-{home_team.get('losses')}",
+            },
+            "away_team": {
+                "abbreviation": away_team.get("teamTricode"),
+                "name": f"{away_team.get('teamCity')} {away_team.get('teamName')}",
+                "score": away_team.get("score"),
+                "record": f"{away_team.get('wins')}-{away_team.get('losses')}",
+            },
+        }
+
+        # Add game leaders if available
+        leaders = game.get("gameLeaders", {})
+        if leaders:
+            game_dict["game_leaders"] = {
+                "home": _format_leader(leaders.get("homeLeaders", {})),
+                "away": _format_leader(leaders.get("awayLeaders", {})),
+            }
+
+        # Add boxscore if requested
+        if include_boxscore and game.get("gameId"):
+            try:
+                game_obj = Game(game["gameId"])
+                boxscore_dfs = game_obj.get_live_boxscore(stat_type=stat_type)
+                game_dict["boxscore"] = [
+                    df.to_dict(orient="records") for df in boxscore_dfs
+                ]
+            except Exception:
+                game_dict["boxscore"] = None
+
+        results.append(game_dict)
+
+    return results
