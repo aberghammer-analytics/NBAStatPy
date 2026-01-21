@@ -1,6 +1,194 @@
 from datetime import datetime
+from time import sleep, time
 
 import pandas as pd
+from nba_api.stats.static import teams as nba_teams
+
+
+class RateLimiter:
+    """Centralized rate limiter for NBA API calls.
+
+    Ensures a minimum delay between API calls to avoid rate limiting.
+    """
+
+    def __init__(self, calls_per_second: float = 1.0):
+        """Initialize the rate limiter.
+
+        Args:
+            calls_per_second: Maximum API calls per second (default 1.0).
+        """
+        self._min_interval = 1.0 / calls_per_second
+        self._last_call_time: float | None = None
+
+    def wait(self) -> None:
+        """Wait if necessary to respect rate limits."""
+        if self._last_call_time is not None:
+            elapsed = time() - self._last_call_time
+            if elapsed < self._min_interval:
+                sleep(self._min_interval - elapsed)
+        self._last_call_time = time()
+
+    def reset(self) -> None:
+        """Reset the rate limiter state."""
+        self._last_call_time = None
+
+
+# Global rate limiter instance for NBA API calls
+rate_limiter = RateLimiter(calls_per_second=1.0)
+
+
+class Validators:
+    """Validation constants and utilities for MCP tools."""
+
+    # Valid season types
+    VALID_SEASON_TYPES = {"Regular Season", "Playoffs", "Pre Season", "All Star"}
+
+    # Valid per modes (normalized keys -> API values)
+    VALID_PER_MODES = {
+        "PerGame",
+        "Per36",
+        "Totals",
+        "PerMinute",
+        "Per100Possessions",
+        "PerPlay",
+        "Per100Plays",
+    }
+
+    # Valid play types for synergy
+    VALID_PLAY_TYPES = {
+        "Transition",
+        "Isolation",
+        "PRBallHandler",
+        "PRRollman",
+        "Postup",
+        "Spotup",
+        "Handoff",
+        "Cut",
+        "OffScreen",
+        "OffRebound",
+        "Misc",
+    }
+
+    # Valid tracking types
+    VALID_TRACKING_TYPES = {
+        "SpeedDistance",
+        "Possessions",
+        "CatchShoot",
+        "PullUpShot",
+        "Defense",
+        "Drives",
+        "Passing",
+        "ElbowTouch",
+        "PostTouch",
+        "PaintTouch",
+        "Efficiency",
+    }
+
+    # Valid measure types for game logs
+    VALID_MEASURE_TYPES = {"Base", "Advanced", "Misc", "Scoring", "Usage"}
+
+    # Valid NBA team abbreviations
+    VALID_TEAM_ABBREVIATIONS = {team["abbreviation"] for team in nba_teams.get_teams()}
+
+    @classmethod
+    def validate_season_type(cls, season_type: str) -> str:
+        """Validate and return the season type.
+
+        Args:
+            season_type: Season type to validate.
+
+        Returns:
+            Validated season type.
+
+        Raises:
+            ValueError: If season type is invalid.
+        """
+        if season_type not in cls.VALID_SEASON_TYPES:
+            raise ValueError(
+                f"Invalid season_type '{season_type}'. "
+                f"Valid options: {sorted(cls.VALID_SEASON_TYPES)}"
+            )
+        return season_type
+
+    @classmethod
+    def validate_team_abbreviation(cls, abbreviation: str) -> str:
+        """Validate and return the team abbreviation.
+
+        Args:
+            abbreviation: Team abbreviation to validate.
+
+        Returns:
+            Validated team abbreviation (uppercase).
+
+        Raises:
+            ValueError: If team abbreviation is invalid.
+        """
+        abbrev_upper = abbreviation.upper()
+        if abbrev_upper not in cls.VALID_TEAM_ABBREVIATIONS:
+            raise ValueError(
+                f"Invalid team abbreviation '{abbreviation}'. "
+                f"Valid options: {sorted(cls.VALID_TEAM_ABBREVIATIONS)}"
+            )
+        return abbrev_upper
+
+    @classmethod
+    def validate_last_n_games(cls, last_n_games: int) -> int:
+        """Validate last_n_games parameter.
+
+        Args:
+            last_n_games: Number of games.
+
+        Returns:
+            Validated number of games.
+
+        Raises:
+            ValueError: If last_n_games is out of bounds.
+        """
+        if last_n_games < 1 or last_n_games > 82:
+            raise ValueError(
+                f"last_n_games must be between 1 and 82, got {last_n_games}"
+            )
+        return last_n_games
+
+    @classmethod
+    def validate_last_n_days(cls, last_n_days: int) -> int:
+        """Validate last_n_days parameter.
+
+        Args:
+            last_n_days: Number of days.
+
+        Returns:
+            Validated number of days.
+
+        Raises:
+            ValueError: If last_n_days is out of bounds.
+        """
+        if last_n_days < 1 or last_n_days > 365:
+            raise ValueError(
+                f"last_n_days must be between 1 and 365, got {last_n_days}"
+            )
+        return last_n_days
+
+    @classmethod
+    def validate_limit(cls, limit: int, min_val: int = 1, max_val: int = 100) -> int:
+        """Validate a limit parameter.
+
+        Args:
+            limit: Limit value to validate.
+            min_val: Minimum allowed value (default 1).
+            max_val: Maximum allowed value (default 100).
+
+        Returns:
+            Validated limit.
+
+        Raises:
+            ValueError: If limit is out of bounds.
+        """
+        if limit < min_val or limit > max_val:
+            raise ValueError(
+                f"limit must be between {min_val} and {max_val}, got {limit}"
+            )
+        return limit
 
 
 class LeaderStats:

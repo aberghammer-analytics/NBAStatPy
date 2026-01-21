@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 import pandas as pd
 
-from nbastatpy import League
+from nbastatpy import Game, League
 from nbastatpy.mcp.server import mcp
-from nbastatpy.utils import Formatter, GameStatsColumns
+from nbastatpy.utils import Formatter, GameStatsColumns, Validators
 
 
 def _parse_matchup(matchup: str) -> tuple[str, str, bool]:
@@ -77,8 +77,8 @@ def get_recent_games_summary(
         - Get playoff games: get_recent_games_summary(season_type="Playoffs")
     """
     # Validation
-    if last_n_days < 1 or last_n_days > 365:
-        raise ValueError(f"last_n_days must be between 1 and 365, got {last_n_days}")
+    Validators.validate_last_n_days(last_n_days)
+    Validators.validate_season_type(season_type)
 
     # Setup League instance
     season_year = Formatter.normalize_season_year(season) if season else None
@@ -197,8 +197,8 @@ def get_recent_games_player_stats(
         - Weekend playoff stats: get_recent_games_player_stats(last_n_days=3, season_type="Playoffs")
     """
     # Validation
-    if last_n_days < 1 or last_n_days > 365:
-        raise ValueError(f"last_n_days must be between 1 and 365, got {last_n_days}")
+    Validators.validate_last_n_days(last_n_days)
+    Validators.validate_season_type(season_type)
 
     # Setup League instance
     season_year = Formatter.normalize_season_year(season) if season else None
@@ -275,3 +275,110 @@ def get_recent_games_player_stats(
     results.sort(key=lambda x: x["game_date"], reverse=True)
 
     return results
+
+
+@mcp.tool()
+def get_game_boxscore(
+    game_id: str,
+    include_advanced: bool = False,
+) -> dict:
+    """Get the boxscore for a specific NBA game.
+
+    Returns detailed player and team statistics for a completed game.
+    Optionally includes advanced metrics like offensive/defensive rating,
+    true shooting percentage, and efficiency metrics.
+
+    Args:
+        game_id: The NBA game ID (e.g., "0022301148", "22301148").
+            IDs are automatically zero-padded to 10 digits.
+        include_advanced: Whether to include advanced statistics.
+            When True, returns additional metrics like OFF_RATING, DEF_RATING,
+            NET_RATING, TS_PCT, EFG_PCT, PIE. Defaults to False.
+
+    Returns:
+        Dictionary containing:
+        - game_id: The formatted game ID
+        - player_stats: List of player boxscore entries
+        - team_stats: List of team boxscore entries
+        - advanced_player_stats: (if include_advanced=True) Advanced player metrics
+        - advanced_team_stats: (if include_advanced=True) Advanced team metrics
+
+    Examples:
+        - Get basic boxscore: get_game_boxscore("0022301148")
+        - Get boxscore with advanced stats: get_game_boxscore("0022301148", include_advanced=True)
+    """
+    game = Game(game_id)
+
+    # Get traditional boxscore
+    boxscore_dfs = game.get_boxscore(standardize=True)
+
+    result: dict[str, Any] = {
+        "game_id": game.game_id,
+        "player_stats": [],
+        "team_stats": [],
+    }
+
+    # Player stats are in first DataFrame, team stats in last
+    if boxscore_dfs and len(boxscore_dfs) > 0:
+        result["player_stats"] = boxscore_dfs[0].to_dict(orient="records")
+    if boxscore_dfs and len(boxscore_dfs) > 1:
+        result["team_stats"] = boxscore_dfs[-1].to_dict(orient="records")
+
+    # Include advanced stats if requested
+    if include_advanced:
+        advanced_dfs = game.get_advanced(standardize=True)
+        if advanced_dfs and len(advanced_dfs) > 0:
+            result["advanced_player_stats"] = advanced_dfs[0].to_dict(orient="records")
+        if advanced_dfs and len(advanced_dfs) > 1:
+            result["advanced_team_stats"] = advanced_dfs[-1].to_dict(orient="records")
+
+    return cast(dict[str, Any], result)
+
+
+@mcp.tool()
+def get_game_playbyplay(
+    game_id: str,
+    period: int | None = None,
+) -> list[dict]:
+    """Get play-by-play data for a specific NBA game.
+
+    Returns a chronological list of all plays in the game, including scores,
+    shot attempts, turnovers, fouls, substitutions, and other events.
+
+    Args:
+        game_id: The NBA game ID (e.g., "0022301148", "22301148").
+            IDs are automatically zero-padded to 10 digits.
+        period: Optional period to filter (1-4 for quarters, 5+ for OT).
+            If not provided, returns all periods.
+
+    Returns:
+        List of play-by-play entries, each containing:
+        - game_id: Game identifier
+        - period: Period number (1-4 for quarters, 5+ for OT)
+        - clock: Game clock at time of play
+        - score_home, score_away: Current scores
+        - description: Description of the play
+        - action_type: Type of action (shot, foul, turnover, etc.)
+        - team_id, player_id: IDs for team/player involved (when applicable)
+
+    Examples:
+        - Get full play-by-play: get_game_playbyplay("0022301148")
+        - Get 4th quarter plays: get_game_playbyplay("0022301148", period=4)
+        - Get overtime plays: get_game_playbyplay("0022301148", period=5)
+    """
+    game = Game(game_id)
+    pbp_df = game.get_playbyplay(standardize=True)
+
+    # Filter by period if specified
+    if period is not None:
+        # Find period column (could be 'period' or 'PERIOD' depending on standardization)
+        period_col = None
+        for col in pbp_df.columns:
+            if col.lower() == "period":
+                period_col = col
+                break
+
+        if period_col:
+            pbp_df = pbp_df[pbp_df[period_col] == period]
+
+    return cast(list[dict[Any, Any]], pbp_df.to_dict(orient="records"))

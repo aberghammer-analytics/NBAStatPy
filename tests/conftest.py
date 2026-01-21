@@ -510,3 +510,301 @@ def mock_league_dash_pt_stats(mocker):
         "nba_api.stats.endpoints.LeagueDashPtStats", return_value=mock_response
     )
     return mock_df
+
+
+@pytest.fixture(autouse=True)
+def mock_common_player_info(mocker):
+    """Mock CommonPlayerInfo API call for player info."""
+    mock_df = pd.DataFrame(
+        {
+            "PERSON_ID": [2544],
+            "FIRST_NAME": ["LeBron"],
+            "LAST_NAME": ["James"],
+            "DISPLAY_FIRST_LAST": ["LeBron James"],
+            "DISPLAY_LAST_COMMA_FIRST": ["James, LeBron"],
+            "DISPLAY_FI_LAST": ["L. James"],
+            "PLAYER_SLUG": ["lebron-james"],
+            "BIRTHDATE": ["1984-12-30T00:00:00"],
+            "SCHOOL": ["St. Vincent-St. Mary HS (OH)"],
+            "COUNTRY": ["USA"],
+            "LAST_AFFILIATION": ["St. Vincent-St. Mary HS (OH)/USA"],
+            "HEIGHT": ["6-9"],
+            "WEIGHT": ["250"],
+            "SEASON_EXP": [21],
+            "JERSEY": ["23"],
+            "POSITION": ["Forward"],
+            "ROSTERSTATUS": ["Active"],
+            "GAMES_PLAYED_CURRENT_SEASON_FLAG": ["Y"],
+            "TEAM_ID": [1610612747],
+            "TEAM_NAME": ["Los Angeles Lakers"],
+            "TEAM_ABBREVIATION": ["LAL"],
+            "TEAM_CODE": ["lakers"],
+            "TEAM_CITY": ["Los Angeles"],
+            "PLAYERCODE": ["lebron_james"],
+            "FROM_YEAR": [2003],
+            "TO_YEAR": [2024],
+            "DLEAGUE_FLAG": ["N"],
+            "NBA_FLAG": ["Y"],
+            "GAMES_PLAYED_FLAG": ["Y"],
+            "DRAFT_YEAR": ["2003"],
+            "DRAFT_ROUND": ["1"],
+            "DRAFT_NUMBER": ["1"],
+            "GREATEST_75_FLAG": ["Y"],
+        }
+    )
+    mock_response = MagicMock()
+    mock_response.get_data_frames.return_value = [mock_df]
+    mocker.patch("nba_api.stats.endpoints.CommonPlayerInfo", return_value=mock_response)
+    return mock_df
+
+
+@pytest.fixture(autouse=True)
+def mock_common_team_roster(mocker):
+    """Mock CommonTeamRoster API call for team roster."""
+    mock_df = pd.DataFrame(
+        {
+            "TeamID": [1610612747] * 3,
+            "SEASON": ["2024-25"] * 3,
+            "LeagueID": ["00"] * 3,
+            "PLAYER": ["LeBron James", "Anthony Davis", "Austin Reaves"],
+            "NICKNAME": ["LeBron", "AD", "Hillbilly Kobe"],
+            "PLAYER_SLUG": ["lebron-james", "anthony-davis", "austin-reaves"],
+            "NUM": ["23", "3", "15"],
+            "POSITION": ["F", "F-C", "G"],
+            "HEIGHT": ["6-9", "6-10", "6-5"],
+            "WEIGHT": ["250", "253", "197"],
+            "BIRTH_DATE": ["DEC 30, 1984", "MAR 11, 1993", "MAY 29, 1998"],
+            "AGE": [40, 31, 26],
+            "EXP": ["21", "12", "3"],
+            "SCHOOL": [
+                "St. Vincent-St. Mary HS (OH)",
+                "Kentucky",
+                "Oklahoma",
+            ],
+            "PLAYER_ID": [2544, 203076, 1630559],
+            "HOW_ACQUIRED": ["Signed"] * 3,
+        }
+    )
+    mock_coaches_df = pd.DataFrame(
+        {
+            "TEAM_ID": [1610612747],
+            "SEASON": ["2024-25"],
+            "COACH_ID": ["204091"],
+            "FIRST_NAME": ["JJ"],
+            "LAST_NAME": ["Redick"],
+            "COACH_NAME": ["JJ Redick"],
+            "IS_ASSISTANT": [0],
+            "COACH_TYPE": ["Head Coach"],
+            "SCHOOL": ["Duke"],
+        }
+    )
+    mock_response = MagicMock()
+    mock_response.get_data_frames.return_value = [mock_df, mock_coaches_df]
+    mocker.patch("nba_api.stats.endpoints.CommonTeamRoster", return_value=mock_response)
+    return mock_df
+
+
+@pytest.fixture(autouse=True)
+def mock_boxscore_traditional_v3(mocker):
+    """Mock BoxScoreTraditionalV3 API call for game boxscore."""
+    mock_player_df = pd.DataFrame(
+        {
+            "gameId": ["0022301148"] * 4,
+            "teamId": [1610612747, 1610612747, 1610612738, 1610612738],
+            "teamCity": ["Los Angeles", "Los Angeles", "Boston", "Boston"],
+            "teamName": ["Lakers", "Lakers", "Celtics", "Celtics"],
+            "teamTricode": ["LAL", "LAL", "BOS", "BOS"],
+            "personId": [2544, 203076, 1628369, 203935],
+            "firstName": ["LeBron", "Anthony", "Jayson", "Marcus"],
+            "familyName": ["James", "Davis", "Tatum", "Smart"],
+            "nameI": ["L. James", "A. Davis", "J. Tatum", "M. Smart"],
+            "position": ["F", "F-C", "F-G", "G"],
+            "comment": [""] * 4,
+            "jerseyNum": ["23", "3", "0", "36"],
+            "minutes": ["PT35M22S", "PT36M15S", "PT38M10S", "PT34M45S"],
+            "fieldGoalsMade": [10, 12, 11, 5],
+            "fieldGoalsAttempted": [18, 20, 22, 12],
+            "fieldGoalsPercentage": [0.556, 0.600, 0.500, 0.417],
+            "threePointersMade": [2, 1, 4, 2],
+            "threePointersAttempted": [5, 3, 10, 6],
+            "threePointersPercentage": [0.400, 0.333, 0.400, 0.333],
+            "freeThrowsMade": [6, 8, 5, 3],
+            "freeThrowsAttempted": [8, 10, 6, 4],
+            "freeThrowsPercentage": [0.750, 0.800, 0.833, 0.750],
+            "reboundsOffensive": [1, 3, 1, 0],
+            "reboundsDefensive": [7, 9, 5, 3],
+            "reboundsTotal": [8, 12, 6, 3],
+            "assists": [9, 3, 5, 8],
+            "steals": [2, 1, 1, 2],
+            "blocks": [1, 3, 1, 0],
+            "turnovers": [3, 2, 2, 3],
+            "foulsPersonal": [2, 4, 3, 4],
+            "points": [28, 33, 31, 15],
+            "plusMinusPoints": [12, 8, -5, -8],
+        }
+    )
+    mock_team_df = pd.DataFrame(
+        {
+            "gameId": ["0022301148", "0022301148"],
+            "teamId": [1610612747, 1610612738],
+            "teamCity": ["Los Angeles", "Boston"],
+            "teamName": ["Lakers", "Celtics"],
+            "teamTricode": ["LAL", "BOS"],
+            "fieldGoalsMade": [42, 40],
+            "fieldGoalsAttempted": [88, 90],
+            "fieldGoalsPercentage": [0.477, 0.444],
+            "threePointersMade": [12, 14],
+            "threePointersAttempted": [32, 38],
+            "threePointersPercentage": [0.375, 0.368],
+            "freeThrowsMade": [18, 16],
+            "freeThrowsAttempted": [22, 20],
+            "freeThrowsPercentage": [0.818, 0.800],
+            "reboundsOffensive": [10, 8],
+            "reboundsDefensive": [35, 32],
+            "reboundsTotal": [45, 40],
+            "assists": [25, 22],
+            "steals": [8, 6],
+            "blocks": [5, 4],
+            "turnovers": [12, 14],
+            "foulsPersonal": [20, 22],
+            "points": [114, 110],
+        }
+    )
+    mock_response = MagicMock()
+    mock_response.get_data_frames.return_value = [mock_player_df, mock_team_df]
+    mocker.patch(
+        "nba_api.stats.endpoints.BoxScoreTraditionalV3", return_value=mock_response
+    )
+    return mock_player_df
+
+
+@pytest.fixture(autouse=True)
+def mock_boxscore_advanced_v3(mocker):
+    """Mock BoxScoreAdvancedV3 API call for advanced boxscore."""
+    mock_player_df = pd.DataFrame(
+        {
+            "gameId": ["0022301148"] * 2,
+            "teamId": [1610612747, 1610612738],
+            "personId": [2544, 1628369],
+            "firstName": ["LeBron", "Jayson"],
+            "familyName": ["James", "Tatum"],
+            "offensiveRating": [118.5, 112.2],
+            "defensiveRating": [105.2, 108.8],
+            "netRating": [13.3, 3.4],
+            "assistPercentage": [0.35, 0.22],
+            "assistRatio": [28.5, 18.2],
+            "assistToTurnover": [3.0, 2.5],
+            "reboundPercentage": [0.12, 0.08],
+            "trueShootingPercentage": [0.65, 0.58],
+            "effectiveFieldGoalPercentage": [0.61, 0.55],
+            "PIE": [0.22, 0.18],
+        }
+    )
+    mock_team_df = pd.DataFrame(
+        {
+            "gameId": ["0022301148", "0022301148"],
+            "teamId": [1610612747, 1610612738],
+            "teamName": ["Lakers", "Celtics"],
+            "offensiveRating": [115.0, 108.5],
+            "defensiveRating": [108.5, 115.0],
+            "netRating": [6.5, -6.5],
+            "trueShootingPercentage": [0.58, 0.54],
+            "PIE": [0.55, 0.45],
+        }
+    )
+    mock_response = MagicMock()
+    mock_response.get_data_frames.return_value = [mock_player_df, mock_team_df]
+    mocker.patch(
+        "nba_api.stats.endpoints.BoxScoreAdvancedV3", return_value=mock_response
+    )
+    return mock_player_df
+
+
+@pytest.fixture(autouse=True)
+def mock_playbyplay_v3(mocker):
+    """Mock PlayByPlayV3 API call for play-by-play data."""
+    mock_df = pd.DataFrame(
+        {
+            "gameId": ["0022301148"] * 5,
+            "actionNumber": [1, 2, 3, 4, 5],
+            "clock": ["PT12M00S", "PT11M45S", "PT11M30S", "PT11M15S", "PT11M00S"],
+            "period": [1, 1, 1, 1, 1],
+            "teamId": [1610612747, 1610612738, 1610612747, 0, 1610612738],
+            "teamTricode": ["LAL", "BOS", "LAL", "", "BOS"],
+            "personId": [2544, 1628369, 203076, 0, 203935],
+            "playerName": [
+                "LeBron James",
+                "Jayson Tatum",
+                "Anthony Davis",
+                "",
+                "Marcus Smart",
+            ],
+            "playerNameI": ["L. James", "J. Tatum", "A. Davis", "", "M. Smart"],
+            "xLegacy": [0, 50, -100, 0, 150],
+            "yLegacy": [0, 100, 50, 0, 200],
+            "shotDistance": [0, 15, 8, 0, 22],
+            "shotResult": ["", "Missed", "Made", "", "Made"],
+            "isFieldGoal": [0, 1, 1, 0, 1],
+            "scoreHome": ["0", "0", "2", "2", "2"],
+            "scoreAway": ["0", "0", "0", "0", "3"],
+            "pointsTotal": [0, 0, 2, 0, 3],
+            "location": ["h", "h", "h", "h", "h"],
+            "description": [
+                "Jump Ball",
+                "MISS Tatum 15' Pullup Jump Shot",
+                "Davis 8' Driving Layup",
+                "Timeout",
+                "Smart 22' 3PT",
+            ],
+            "actionType": ["jumpball", "2pt", "2pt", "timeout", "3pt"],
+            "subType": ["", "pullupjumpshot", "drivinglayup", "", ""],
+        }
+    )
+    mock_response = MagicMock()
+    mock_response.get_data_frames.return_value = [mock_df]
+    mocker.patch("nba_api.stats.endpoints.PlayByPlayV3", return_value=mock_response)
+    return mock_df
+
+
+@pytest.fixture(autouse=True)
+def mock_league_dash_team_stats(mocker):
+    """Mock LeagueDashTeamStats API call for league team stats."""
+    mock_df = pd.DataFrame(
+        {
+            "TEAM_ID": [1610612749, 1610612738, 1610612747],
+            "TEAM_NAME": ["Milwaukee Bucks", "Boston Celtics", "Los Angeles Lakers"],
+            "TEAM_ABBREVIATION": ["MIL", "BOS", "LAL"],
+            "GP": [45, 46, 44],
+            "W": [30, 32, 25],
+            "L": [15, 14, 19],
+            "W_PCT": [0.667, 0.696, 0.568],
+            "MIN": [48.0, 48.0, 48.0],
+            "FGM": [42.5, 44.2, 41.8],
+            "FGA": [90.2, 88.5, 89.8],
+            "FG_PCT": [0.471, 0.499, 0.465],
+            "FG3M": [13.5, 16.2, 12.8],
+            "FG3A": [38.2, 42.5, 36.5],
+            "FG3_PCT": [0.354, 0.381, 0.351],
+            "FTM": [18.5, 17.2, 19.8],
+            "FTA": [23.2, 21.5, 25.0],
+            "FT_PCT": [0.797, 0.800, 0.792],
+            "OREB": [10.5, 9.2, 11.0],
+            "DREB": [34.5, 36.2, 33.8],
+            "REB": [45.0, 45.4, 44.8],
+            "AST": [26.5, 28.2, 25.5],
+            "TOV": [13.5, 12.8, 14.2],
+            "STL": [7.5, 8.2, 7.0],
+            "BLK": [5.5, 5.0, 4.8],
+            "BLKA": [4.5, 4.2, 5.0],
+            "PF": [19.5, 18.8, 20.2],
+            "PFD": [20.2, 19.5, 21.0],
+            "PTS": [117.0, 121.8, 116.2],
+            "PLUS_MINUS": [5.5, 8.2, 3.5],
+        }
+    )
+    mock_response = MagicMock()
+    mock_response.get_data_frames.return_value = [mock_df]
+    mocker.patch(
+        "nba_api.stats.endpoints.LeagueDashTeamStats", return_value=mock_response
+    )
+    return mock_df

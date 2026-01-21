@@ -1,5 +1,3 @@
-from time import sleep
-
 import nba_api.stats.endpoints as nba
 import pandas as pd
 import requests
@@ -7,11 +5,16 @@ from bs4 import BeautifulSoup
 from rich.progress import track
 
 from nbastatpy.standardize import standardize_dataframe
-from nbastatpy.utils import Formatter, LeaderStats, PlayTypes
+from nbastatpy.utils import Formatter, LeaderStats, PlayTypes, rate_limiter
 
 
 class League:
-    def __init__(self, season_year=None, playoffs=False, permode: str = "PERGAME"):
+    def __init__(
+        self,
+        season_year: int | str | None = None,
+        playoffs: bool = False,
+        permode: str = "PERGAME",
+    ):
         """
         Initialize a League object.
 
@@ -573,7 +576,7 @@ class League:
                     season_type_all_star=self.season_type,
                 ).get_data_frames()[0]
                 df_list.append(temp_df)
-                sleep(1)
+                rate_limiter.wait()
 
             self.synergy = pd.concat(df_list)
 
@@ -640,7 +643,7 @@ class League:
                     season_type_all_star=self.season_type,
                 ).get_data_frames()[0]
                 df_list.append(temp_df)
-                sleep(1)
+                rate_limiter.wait()
 
             self.synergy = pd.concat(df_list)
 
@@ -696,7 +699,7 @@ class League:
                     season_type_all_star=self.season_type,
                 ).get_data_frames()[0]
                 df_list.append(temp_df)
-                sleep(1)
+                rate_limiter.wait()
 
             self.tracking = pd.concat(df_list)
 
@@ -750,7 +753,7 @@ class League:
                     season_type_all_star=self.season_type,
                 ).get_data_frames()[0]
                 df_list.append(temp_df)
-                sleep(1)
+                rate_limiter.wait()
 
             self.tracking = pd.concat(df_list)
 
@@ -800,7 +803,7 @@ class League:
                     season_type_all_star=self.season_type,
                 ).get_data_frames()[0]
                 df_list.append(temp_df)
-                sleep(1)
+                rate_limiter.wait()
 
             self.defense = pd.concat(df_list)
 
@@ -841,7 +844,7 @@ class League:
                     season_type_all_star=self.season_type,
                 ).get_data_frames()[0]
                 df_list.append(temp_df)
-                sleep(1)
+                rate_limiter.wait()
 
             self.defense = pd.concat(df_list)
 

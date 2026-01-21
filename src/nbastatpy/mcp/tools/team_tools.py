@@ -2,7 +2,7 @@ from typing import Any, cast
 
 from nbastatpy import League, Team
 from nbastatpy.mcp.server import mcp
-from nbastatpy.utils import Formatter, PlayTypes
+from nbastatpy.utils import Formatter, PlayTypes, Validators
 
 
 @mcp.tool()
@@ -27,6 +27,11 @@ def get_team_recent_games(
         include_opponent_stats: Whether to include opponent stats for each game (OPP_PTS, OPP_REB, etc.). Defaults to True.
         include_advanced_stats: Whether to include advanced stats (OFF_RATING, DEF_RATING, NET_RATING, PACE, EFG_PCT, TS_PCT, PIE, FT_RATE, TOV_PCT, OREB_PCT). Slower due to additional API calls. Defaults to False.
     """
+    # Validate parameters
+    Validators.validate_team_abbreviation(team_abbreviation)
+    Validators.validate_last_n_games(last_n_games)
+    Validators.validate_season_type(season_type)
+
     # Normalize season format if provided
     season_year = str(Formatter.normalize_season_year(season)) if season else None
 
@@ -85,6 +90,9 @@ def get_team_play_type_stats(
         - Get all play types for Bucks: get_team_play_type_stats(play_type="all", team_name="Bucks")
         - Get defensive transition stats: get_team_play_type_stats(play_type="Transition", offensive=False)
     """
+    # Validate parameters
+    Validators.validate_season_type(season_type)
+
     # Normalize season year if provided
     season_year = str(Formatter.normalize_season_year(season)) if season else None
 
@@ -163,6 +171,9 @@ def get_team_tracking_stats(
         - Get speed/distance for Bucks: get_team_tracking_stats(track_type="SpeedDistance", team_name="Bucks")
         - Get all tracking types: get_team_tracking_stats(track_type="all")
     """
+    # Validate parameters
+    Validators.validate_season_type(season_type)
+
     # Normalize season year if provided
     season_year = str(Formatter.normalize_season_year(season)) if season else None
 
@@ -197,3 +208,52 @@ def get_team_tracking_stats(
             df = df[df[name_col].str.lower().str.contains(team_name.lower(), na=False)]
 
     return cast(list[dict[Any, Any]], df.to_dict(orient="records"))
+
+
+@mcp.tool()
+def get_team_roster(
+    team_abbreviation: str,
+    season: str | None = None,
+) -> list[dict]:
+    """Get the roster for an NBA team.
+
+    Returns the list of players on a team's roster for a given season,
+    including player names, positions, jersey numbers, and basic info.
+
+    Args:
+        team_abbreviation: NBA team abbreviation (e.g., "MIL", "LAL", "BOS", "GSW").
+        season: Season year (e.g., "2024", "2024-25"). Defaults to current season.
+
+    Returns:
+        List of roster entries, each containing:
+        - player_id: NBA player ID
+        - player: Player name
+        - num: Jersey number
+        - position: Playing position
+        - height: Player height
+        - weight: Player weight
+        - birth_date: Date of birth
+        - age: Player age
+        - exp: Years of NBA experience
+        - school: College/school attended
+        - how_acquired: How player was acquired
+
+    Examples:
+        - Get Lakers roster: get_team_roster("LAL")
+        - Get 2023 Bucks roster: get_team_roster("MIL", season="2023")
+    """
+    # Validate parameters
+    Validators.validate_team_abbreviation(team_abbreviation)
+
+    # Normalize season format if provided
+    season_year = str(Formatter.normalize_season_year(season)) if season else None
+
+    team = Team(team_abbreviation, season_year=season_year)
+    roster_dfs = team.get_roster(standardize=True)
+
+    # Roster data is in the first DataFrame
+    if roster_dfs and len(roster_dfs) > 0:
+        roster_df = roster_dfs[0]
+        return cast(list[dict[Any, Any]], roster_df.to_dict(orient="records"))
+
+    return []

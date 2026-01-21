@@ -2,7 +2,7 @@ from typing import Any, cast
 
 from nbastatpy import League, Player
 from nbastatpy.mcp.server import mcp
-from nbastatpy.utils import Formatter, PlayTypes
+from nbastatpy.utils import Formatter, PlayTypes, Validators
 
 
 @mcp.tool()
@@ -63,9 +63,9 @@ def get_player_game_logs(
         - Get Jokic's last 10 games with advanced stats: get_player_game_logs("Nikola Jokic", stat_type="Advanced")
         - Get Curry's per-100 stats: get_player_game_logs("Stephen Curry", per_mode="Per100Possessions")
     """
-    # Validate last_n_games parameter
-    if last_n_games < 1 or last_n_games > 82:
-        raise ValueError(f"last_n_games must be between 1 and 82, got {last_n_games}")
+    # Validate parameters
+    Validators.validate_last_n_games(last_n_games)
+    Validators.validate_season_type(season_type)
 
     # Normalize season year if provided
     season_year = str(Formatter.normalize_season_year(season)) if season else None
@@ -128,6 +128,9 @@ def get_player_career_stats(
         - Get Jokic's advanced career stats: get_player_career_stats("Nikola Jokic", stat_type="Advanced")
         - Get Curry's career per-100 stats: get_player_career_stats("Stephen Curry", per_mode="Per100Possessions")
     """
+    # Validate season_type
+    Validators.validate_season_type(season_type)
+
     # Normalize and validate per_mode
     permode_key = per_mode.replace("_", "").replace("-", "").upper()
     if permode_key not in PlayTypes.PERMODE:
@@ -193,6 +196,9 @@ def get_player_play_type_stats(
         - Get all play types for Giannis: get_player_play_type_stats(play_type="all", player_name="Giannis")
         - Get defensive transition stats: get_player_play_type_stats(play_type="Transition", offensive=False)
     """
+    # Validate parameters
+    Validators.validate_season_type(season_type)
+
     # Normalize season year if provided
     season_year = str(Formatter.normalize_season_year(season)) if season else None
 
@@ -273,6 +279,9 @@ def get_player_tracking_stats(
         - Get all speed/distance for Giannis: get_player_tracking_stats(track_type="SpeedDistance", player_name="Giannis")
         - Get all tracking types: get_player_tracking_stats(track_type="all")
     """
+    # Validate parameters
+    Validators.validate_season_type(season_type)
+
     # Normalize season year if provided
     season_year = str(Formatter.normalize_season_year(season)) if season else None
 
@@ -309,3 +318,56 @@ def get_player_tracking_stats(
             ]
 
     return cast(list[dict[Any, Any]], df.to_dict(orient="records"))
+
+
+@mcp.tool()
+def get_player_info(player_name: str) -> dict:
+    """Get biographical and career information for an NBA player.
+
+    Returns detailed player information including physical attributes, draft details,
+    team history, and career metadata. Use this to answer questions about a player's
+    background, height, weight, birthdate, college, draft position, etc.
+
+    Args:
+        player_name: Player name (e.g., "LeBron James", "Giannis Antetokounmpo").
+            Accepts full names, partial names, or player IDs.
+
+    Returns:
+        Dictionary containing player information:
+        - player_id: NBA player ID
+        - first_name, last_name, full_name: Name details
+        - birthdate: Date of birth
+        - school: College/school attended
+        - country: Country of origin
+        - height: Height (e.g., "6-9")
+        - weight: Weight in pounds
+        - jersey: Current jersey number
+        - position: Playing position (e.g., "Forward")
+        - team_name, team_abbreviation: Current team info
+        - draft_year, draft_round, draft_number: Draft details
+        - from_year, to_year: Career span
+        - is_active: Whether currently active
+
+    Examples:
+        - Get LeBron's info: get_player_info("LeBron James")
+        - Get Giannis' info: get_player_info("Giannis")
+    """
+    player = Player(player_name)
+    info_df = player.get_common_info(standardize=True)
+
+    # Convert DataFrame to dict and return the first row
+    if len(info_df) > 0:
+        info_dict = info_df.iloc[0].to_dict()
+        # Add basic player identifiers
+        info_dict["player_id"] = player.id
+        info_dict["full_name"] = player.name
+        info_dict["first_name"] = player.first_name
+        info_dict["last_name"] = player.last_name
+        info_dict["is_active"] = player.is_active
+        return cast(dict[Any, Any], info_dict)
+
+    return {
+        "player_id": player.id,
+        "full_name": player.name,
+        "is_active": player.is_active,
+    }

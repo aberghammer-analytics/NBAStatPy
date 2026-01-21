@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 import pandas as pd
 from loguru import logger
@@ -129,7 +128,7 @@ class PlayerDataStandardizer(DataStandardizer):
     def __init__(
         self,
         df: pd.DataFrame,
-        season: Optional[str] = None,
+        season: str | None = None,
         playoffs: bool = False,
         add_metadata: bool = False,
     ):
@@ -268,7 +267,7 @@ class GameDataStandardizer(DataStandardizer):
     def __init__(
         self,
         df: pd.DataFrame,
-        season: Optional[str] = None,
+        season: str | None = None,
         playoffs: bool = False,
         add_metadata: bool = False,
     ):
@@ -454,7 +453,7 @@ class LeagueDataStandardizer(DataStandardizer):
     def __init__(
         self,
         df: pd.DataFrame,
-        season: Optional[str] = None,
+        season: str | None = None,
         playoffs: bool = False,
         add_metadata: bool = False,
     ):
@@ -536,7 +535,7 @@ class TeamDataStandardizer(DataStandardizer):
     def __init__(
         self,
         df: pd.DataFrame,
-        season: Optional[str] = None,
+        season: str | None = None,
         playoffs: bool = False,
         add_metadata: bool = False,
     ):
@@ -578,7 +577,7 @@ class TeamDataStandardizer(DataStandardizer):
 def standardize_dataframe(
     df: pd.DataFrame,
     data_type: str = "base",
-    season: Optional[str] = None,
+    season: str | None = None,
     playoffs: bool = False,
     add_metadata: bool = False,
 ) -> pd.DataFrame:
