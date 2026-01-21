@@ -901,9 +901,3 @@ class League:
 
         self.league_leaders = df
         return self.league_leaders
-
-
-if __name__ == "__main__":
-    seas = League(season_year="2004")
-    print(seas.permode)
-    print(seas.get_salaries())

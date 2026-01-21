@@ -637,9 +637,3 @@ class Team:
             df = df.merge(advanced_df, on="Game_ID", how="left")
 
         return df
-
-
-if __name__ == "__main__":
-    team_name = "MIL"
-    team = Team(team_name, season_year="2024", playoffs=True)
-    print(team.get_salary())

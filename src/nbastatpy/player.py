@@ -711,10 +711,3 @@ class Player:
             ).get_data_frames()[0]
 
         return self.shot_chart
-
-
-if __name__ == "__main__":
-    player_name = "giannis"
-    player_seas = "2020"
-    player = Player(player_name, player_seas)
-    print(player.get_salary())

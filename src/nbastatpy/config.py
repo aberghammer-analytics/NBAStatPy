@@ -440,3 +440,47 @@ class TableConfigs:
         "teamdashptpass",
         "teamplayeronoffdetails",
     }
+
+
+class LiveBoxscoreColumns:
+    """Column definitions for live boxscore data filtering."""
+
+    # Traditional stats columns for player boxscore
+    TRADITIONAL: list[str] = [
+        "personId",
+        "name",
+        "position",
+        "minutes",
+        "points",
+        "reboundsTotal",
+        "assists",
+        "steals",
+        "blocks",
+        "turnovers",
+        "fieldGoalsMade",
+        "fieldGoalsAttempted",
+        "threePointersMade",
+        "threePointersAttempted",
+        "freeThrowsMade",
+        "freeThrowsAttempted",
+    ]
+
+    # Advanced stats columns for player boxscore
+    ADVANCED: list[str] = [
+        "personId",
+        "name",
+        "position",
+        "minutes",
+        "plusMinusPoints",
+        "reboundsOffensive",
+        "reboundsDefensive",
+    ]
+
+    # Game summary fields extracted from game data
+    SUMMARY_FIELDS: list[str] = [
+        "gameId",
+        "gameStatus",
+        "gameStatusText",
+        "period",
+        "gameClock",
+    ]

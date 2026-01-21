@@ -1,8 +1,66 @@
 import nba_api.stats.endpoints as nba
 import pandas as pd
+from nba_api.live.nba.endpoints import boxscore as live_boxscore
 
+from nbastatpy.config import LiveBoxscoreColumns
 from nbastatpy.standardize import standardize_dataframe
 from nbastatpy.utils import Formatter
+
+
+def _flatten_player_stats(players_data: list[dict]) -> pd.DataFrame:
+    """Flatten nested statistics from live boxscore player data.
+
+    The live API returns player stats with a nested 'statistics' dictionary.
+    This function extracts and flattens that structure into a single-level DataFrame.
+
+    Args:
+        players_data: List of player dictionaries from live boxscore API
+
+    Returns:
+        pd.DataFrame: Flattened player statistics
+    """
+    flattened = []
+    for player in players_data:
+        row = {k: v for k, v in player.items() if k != "statistics" and v != {}}
+        if "statistics" in player and isinstance(player["statistics"], dict):
+            row.update(player["statistics"])
+        flattened.append(row)
+    return pd.DataFrame(flattened)
+
+
+def _build_game_summary(game_data: dict) -> pd.DataFrame:
+    """Build a summary DataFrame from live game data.
+
+    Args:
+        game_data: Game dictionary from live boxscore API
+
+    Returns:
+        pd.DataFrame: Single-row DataFrame with game summary info
+    """
+    summary = {field: game_data.get(field) for field in LiveBoxscoreColumns.SUMMARY_FIELDS}
+    summary.update(
+        {
+            "homeTeamId": game_data.get("homeTeam", {}).get("teamId"),
+            "homeTeamScore": game_data.get("homeTeam", {}).get("score"),
+            "awayTeamId": game_data.get("awayTeam", {}).get("teamId"),
+            "awayTeamScore": game_data.get("awayTeam", {}).get("score"),
+        }
+    )
+    return pd.DataFrame([summary])
+
+
+def _filter_columns(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
+    """Filter DataFrame to only include columns that exist.
+
+    Args:
+        df: Source DataFrame
+        columns: List of desired column names
+
+    Returns:
+        pd.DataFrame: DataFrame with only the existing columns from the list
+    """
+    existing_cols = [c for c in columns if c in df.columns]
+    return df[existing_cols]
 
 
 class Game:
@@ -245,8 +303,50 @@ class Game:
         self.win_probability = df
         return self.win_probability
 
+    def get_live_boxscore(
+        self, stat_type: str = "all", standardize: bool = False
+    ) -> list[pd.DataFrame]:
+        """Gets live/current boxscore data for the game.
 
-if __name__ == "__main__":
-    GAME_ID = "0022301148"
-    game = Game(game_id=GAME_ID)
-    print(game.get_win_probability())
+        Works for both in-progress games and completed games.
+
+        Args:
+            stat_type: Type of statistics to return. Options:
+                - "all": All available data (game info, players, teams)
+                - "traditional": Basic player/team stats (points, rebounds, assists)
+                - "advanced": Advanced metrics (plus-minus, efficiency)
+                - "summary": Game summary only (score, status, time)
+            standardize: Whether to apply data standardization
+
+        Returns:
+            list[pd.DataFrame]: Live game data based on stat_type
+        """
+        box = live_boxscore.BoxScore(self.game_id)
+        game_data = box.game.get_dict()
+
+        home_players = _flatten_player_stats(box.home_team_player_stats.get_dict())
+        away_players = _flatten_player_stats(box.away_team_player_stats.get_dict())
+        home_team = pd.DataFrame([box.home_team_stats.get_dict()])
+        away_team = pd.DataFrame([box.away_team_stats.get_dict()])
+
+        if stat_type == "summary":
+            dfs = [_build_game_summary(game_data)]
+        elif stat_type == "traditional":
+            dfs = [
+                _filter_columns(home_players, LiveBoxscoreColumns.TRADITIONAL),
+                _filter_columns(away_players, LiveBoxscoreColumns.TRADITIONAL),
+            ]
+        elif stat_type == "advanced":
+            dfs = [
+                _filter_columns(home_players, LiveBoxscoreColumns.ADVANCED),
+                _filter_columns(away_players, LiveBoxscoreColumns.ADVANCED),
+            ]
+        else:  # "all"
+            game_info = pd.DataFrame([game_data])
+            dfs = [game_info, home_players, away_players, home_team, away_team]
+
+        if standardize:
+            dfs = [standardize_dataframe(df, data_type="game") for df in dfs]
+
+        self.live_boxscore = dfs
+        return self.live_boxscore
