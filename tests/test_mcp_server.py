@@ -91,15 +91,21 @@ async def test_all_tools_registered(mcp_client: Client[FastMCPTransport]):
         "get_player_career_stats",
         "get_player_play_type_stats",
         "get_player_tracking_stats",
+        "get_player_info",
         # League tools
         "get_league_leaders",
+        "get_league_player_stats",
+        "get_league_team_stats",
         # Team tools
         "get_team_recent_games",
         "get_team_play_type_stats",
         "get_team_tracking_stats",
+        "get_team_roster",
         # Game tools
         "get_recent_games_summary",
         "get_recent_games_player_stats",
+        "get_game_boxscore",
+        "get_game_playbyplay",
     ]
 
     # Verify we have exactly the expected tools
@@ -117,28 +123,32 @@ async def test_tool_registration_count_by_module(mcp_client: Client[FastMCPTrans
     tools = await mcp_client.list_tools()
     tool_names = [tool.name for tool in tools]
 
-    # player_tools should contribute 6 tools (includes get_recent_games_player_stats)
+    # player_tools should contribute 8 tools (includes get_recent_games_player_stats, get_player_info, get_league_player_stats)
     # get_player_salary, get_player_game_logs, get_player_career_stats,
-    # get_player_play_type_stats, get_player_tracking_stats, get_recent_games_player_stats
+    # get_player_play_type_stats, get_player_tracking_stats, get_player_info,
+    # get_recent_games_player_stats, get_league_player_stats
     player_tools = [name for name in tool_names if "player" in name]
-    assert len(player_tools) == 6
+    assert len(player_tools) == 8
 
-    # league_tools should contribute 1 tool
+    # league_tools should contribute 3 tools (get_league_leaders, get_league_player_stats, get_league_team_stats)
+    # Note: get_league_player_stats also counted in player_tools due to "player" in name
     league_tools = [name for name in tool_names if "league" in name]
-    assert len(league_tools) == 1
+    assert len(league_tools) == 3
 
-    # team_tools should contribute 3 tools
-    # get_team_recent_games, get_team_play_type_stats, get_team_tracking_stats
+    # team_tools should contribute 5 tools (includes get_league_team_stats)
+    # get_team_recent_games, get_team_play_type_stats, get_team_tracking_stats,
+    # get_team_roster, get_league_team_stats
     team_tools = [name for name in tool_names if "team" in name]
-    assert len(team_tools) == 3
+    assert len(team_tools) == 5
 
-    # game_tools should contribute 1 tool (get_recent_games_summary; player_stats excluded due to "player" filter)
+    # game_tools should contribute 3 tools (get_recent_games_summary, get_game_boxscore, get_game_playbyplay)
+    # player_stats excluded due to "player" filter
     game_tools = [
         name
         for name in tool_names
         if "game" in name and "player" not in name and "team" not in name
     ]
-    assert len(game_tools) == 1
+    assert len(game_tools) == 3
 
     logger.info(
         f"Tool count by module - player: {len(player_tools)}, league: {len(league_tools)}, team: {len(team_tools)}, game: {len(game_tools)}"

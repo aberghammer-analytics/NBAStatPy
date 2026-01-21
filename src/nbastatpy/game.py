@@ -1,5 +1,3 @@
-from typing import List
-
 import nba_api.stats.endpoints as nba
 import pandas as pd
 
@@ -16,14 +14,14 @@ class Game:
         """
         self.game_id = Formatter.format_game_id(game_id)
 
-    def get_boxscore(self, standardize: bool = False) -> List[pd.DataFrame]:
+    def get_boxscore(self, standardize: bool = False) -> list[pd.DataFrame]:
         """Gets traditional boxscore
 
         Args:
             standardize: Whether to apply data standardization
 
         Returns:
-            List[pd.DataFrame]: list of dataframes (players, starters/bench, team)
+            list[pd.DataFrame]: list of dataframes (players, starters/bench, team)
         """
         dfs = nba.BoxScoreTraditionalV3(self.game_id).get_data_frames()
 
@@ -87,14 +85,14 @@ class Game:
         self.four_factors = dfs
         return self.four_factors
 
-    def get_hustle(self, standardize: bool = False) -> List[pd.DataFrame]:
+    def get_hustle(self, standardize: bool = False) -> list[pd.DataFrame]:
         """Gets hustle data for a given game
 
         Args:
             standardize: Whether to apply data standardization
 
         Returns:
-            List[pd.DataFrame]: list of two dataframes (players, teams)
+            list[pd.DataFrame]: list of two dataframes (players, teams)
         """
         dfs = nba.BoxScoreHustleV2(self.game_id).get_data_frames()
 
@@ -158,14 +156,14 @@ class Game:
         self.scoring = dfs
         return self.scoring
 
-    def get_usage(self, standardize: bool = False) -> List[pd.DataFrame]:
+    def get_usage(self, standardize: bool = False) -> list[pd.DataFrame]:
         """Gets usage data for a given game
 
         Args:
             standardize: Whether to apply data standardization
 
         Returns:
-            List[pd.DataFrame]: list of two dataframes (players, teams)
+            list[pd.DataFrame]: list of two dataframes (players, teams)
         """
         dfs = nba.BoxScoreUsageV3(self.game_id).get_data_frames()
 

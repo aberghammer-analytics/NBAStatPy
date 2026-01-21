@@ -1,11 +1,8 @@
-from typing import Dict, List, Set
-
-
 class ColumnTypes:
     """Standard column type mappings for common NBA data fields."""
 
     # Numeric types - Integer columns
-    INTEGER_COLUMNS: Set[str] = {
+    INTEGER_COLUMNS: set[str] = {
         # Basic info
         "age",
         "season_year",
@@ -98,7 +95,7 @@ class ColumnTypes:
     }
 
     # Float columns - Percentages, rates, and continuous metrics
-    FLOAT_COLUMNS: Set[str] = {
+    FLOAT_COLUMNS: set[str] = {
         # Shooting percentages
         "fg_pct",
         "fg2_pct",
@@ -195,7 +192,7 @@ class ColumnTypes:
     }
 
     # String types
-    STRING_COLUMNS: Set[str] = {
+    STRING_COLUMNS: set[str] = {
         # Player info
         "player_name",
         "player_first_name",
@@ -252,7 +249,7 @@ class IDFields:
     """Registry of ID fields and their standardization rules."""
 
     # Fields that should be zero-padded to 10 digits
-    ID_FIELDS: Set[str] = {
+    ID_FIELDS: set[str] = {
         "player_id",
         "team_id",
         "game_id",
@@ -272,7 +269,7 @@ class IDFields:
     }
 
     # Mapping of inconsistent ID field names to standardized names
-    ID_FIELD_MAPPING: Dict[str, str] = {
+    ID_FIELD_MAPPING: dict[str, str] = {
         "gameid": "game_id",
         "teamid": "team_id",
         "playerid": "player_id",
@@ -285,7 +282,7 @@ class DateFields:
     """Registry of date fields and parsing formats."""
 
     # Fields that should be parsed as dates
-    DATE_FIELDS: Set[str] = {
+    DATE_FIELDS: set[str] = {
         "game_date",
         "birthdate",
         "birth_date",
@@ -294,7 +291,7 @@ class DateFields:
     }
 
     # Date parsing formats to try (in order)
-    DATE_FORMATS: List[str] = [
+    DATE_FORMATS: list[str] = [
         "%Y-%m-%dT%H:%M:%S",  # ISO with time
         "%Y-%m-%d",  # ISO date
         "%m/%d/%Y",  # US format
@@ -306,14 +303,14 @@ class TimeFields:
     """Registry of time fields that need conversion."""
 
     # Fields in MM:SS format that should be converted to seconds
-    MINUTES_SECONDS_FIELDS: Set[str] = {
+    MINUTES_SECONDS_FIELDS: set[str] = {
         "min",
         "minutes",
         "matchupminutes",
     }
 
     # Fields that represent seconds already
-    SECONDS_FIELDS: Set[str] = {
+    SECONDS_FIELDS: set[str] = {
         "seconds",
         "matchup_seconds",
         "clock_seconds",
@@ -324,52 +321,52 @@ class SpecialFields:
     """Special field handling rules."""
 
     # Fields that indicate playoff vs regular season
-    PLAYOFF_INDICATORS: Set[str] = {
+    PLAYOFF_INDICATORS: set[str] = {
         "season_type",
         "season_type_all_star",
         "is_playoffs",
     }
 
     # Height fields (in feet-inches format like "6-11")
-    HEIGHT_FIELDS: Set[str] = {
+    HEIGHT_FIELDS: set[str] = {
         "height",
         "player_height",
     }
 
     # Weight fields (in pounds)
-    WEIGHT_FIELDS: Set[str] = {
+    WEIGHT_FIELDS: set[str] = {
         "weight",
         "player_weight",
     }
 
     # Matchup fields that need parsing (e.g., "TOR @ BOS")
-    MATCHUP_FIELDS: Set[str] = {
+    MATCHUP_FIELDS: set[str] = {
         "matchup",
         "game_matchup",
     }
 
     # Win/Loss indicator fields
-    WL_FIELDS: Set[str] = {
+    WL_FIELDS: set[str] = {
         "wl",
         "w_l",
         "outcome",
     }
 
     # Lineup/group name fields that contain player names
-    LINEUP_FIELDS: Set[str] = {
+    LINEUP_FIELDS: set[str] = {
         "group_name",
         "lineup",
     }
 
     # Fields that should be added during standardization
-    METADATA_FIELDS: Set[str] = {
+    METADATA_FIELDS: set[str] = {
         "standardized_at",
         "source_endpoint",
         "data_type",
     }
 
     # Salary fields that need currency cleaning
-    SALARY_FIELDS: Set[str] = {
+    SALARY_FIELDS: set[str] = {
         "salary",
         "adj_salary",
     }
@@ -379,7 +376,7 @@ class TableConfigs:
     """Table-specific configuration rules."""
 
     # Player endpoints that return player data
-    PLAYER_ENDPOINTS: Set[str] = {
+    PLAYER_ENDPOINTS: set[str] = {
         "commonplayerinfo",
         "playercareerstats",
         "playerdashboardbygeneralsplits",
@@ -391,7 +388,7 @@ class TableConfigs:
     }
 
     # Game endpoints
-    GAME_ENDPOINTS: Set[str] = {
+    GAME_ENDPOINTS: set[str] = {
         "boxscoretraditionalv3",
         "boxscoreadvancedv3",
         "boxscoredefensivev2",
@@ -408,7 +405,7 @@ class TableConfigs:
     }
 
     # League endpoints
-    SEASON_ENDPOINTS: Set[str] = {
+    SEASON_ENDPOINTS: set[str] = {
         "leaguedashlineups",
         "leaguelineupviz",
         "leaguedashopppptshot",
@@ -433,7 +430,7 @@ class TableConfigs:
     }
 
     # Team endpoints
-    TEAM_ENDPOINTS: Set[str] = {
+    TEAM_ENDPOINTS: set[str] = {
         "commonteamroster",
         "teamyearbyyearstats",
         "teamdashboardbygeneralsplits",

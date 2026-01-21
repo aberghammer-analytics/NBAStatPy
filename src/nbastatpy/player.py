@@ -107,7 +107,10 @@ class Player:
                 for row in tables[3].find_all("tr")
             ]
 
-            if not rows[0]:
+            # Define columns - use first row if non-empty, otherwise use default
+            if rows[0]:
+                cols = rows[0]
+            else:
                 cols = ["Season", "Team", "Salary"]
 
             projected = pd.DataFrame(rows[1:], columns=cols)
@@ -488,6 +491,26 @@ class Player:
         )
         return self.clutch
 
+    def _get_player_teams_for_season(self) -> list[int]:
+        """Get the team ID(s) for the player in the current season.
+
+        Handles mid-season trades by returning multiple team IDs.
+        Fetches season totals if not already cached.
+
+        Returns:
+            list[int]: List of team IDs the player played for this season.
+        """
+        if not hasattr(self, "season_totals"):
+            logger.info("Getting Teams")
+            self.get_season_career_totals()
+
+        teams_df = self.season_totals.copy()
+        team_ids = teams_df[
+            (teams_df["SEASON_ID"] == self.season) & (teams_df["TEAM_ID"] != 0)
+        ]["TEAM_ID"].tolist()
+
+        return team_ids
+
     def get_pt_pass(self) -> pd.DataFrame:
         """
         Retrieves the passing statistics for the player.
@@ -495,15 +518,7 @@ class Player:
         Returns:
             pd.DataFrame: A DataFrame containing the passing statistics for the player.
         """
-        if not hasattr(self, "season_totals"):
-            logger.info("Getting Teams")
-            teams = self.get_season_career_totals()[0]
-        else:
-            teams = self.season_totals.copy()
-
-        teams = teams[(teams["SEASON_ID"] == self.season) & (teams["TEAM_ID"] != 0)][
-            "TEAM_ID"
-        ].tolist()
+        teams = self._get_player_teams_for_season()
 
         if len(teams) > 1:
             self.pt_pass = []
@@ -548,15 +563,7 @@ class Player:
         Returns:
             pd.DataFrame: A DataFrame containing the rebounds data.
         """
-        if not hasattr(self, "season_totals"):
-            logger.info("Getting Teams")
-            teams = self.get_season_career_totals()[0]
-        else:
-            teams = self.season_totals.copy()
-
-        teams = teams[(teams["SEASON_ID"] == self.season) & (teams["TEAM_ID"] != 0)][
-            "TEAM_ID"
-        ].tolist()
+        teams = self._get_player_teams_for_season()
 
         if len(teams) > 1:
             self.pt_reb = []
@@ -628,15 +635,7 @@ class Player:
         Returns:
             pd.DataFrame: The shots data for the player.
         """
-        if not hasattr(self, "season_totals"):
-            logger.info("Getting Teams")
-            teams = self.get_season_career_totals()[0]
-        else:
-            teams = self.season_totals.copy()
-
-        teams = teams[(teams["SEASON_ID"] == self.season) & (teams["TEAM_ID"] != 0)][
-            "TEAM_ID"
-        ].tolist()
+        teams = self._get_player_teams_for_season()
 
         if len(teams) > 1:
             self.pt_shots = []
@@ -687,15 +686,7 @@ class Player:
         Returns:
             pd.DataFrame: The shot chart data for the player.
         """
-        if not hasattr(self, "season_totals"):
-            logger.info("Getting Teams")
-            teams = self.get_season_career_totals()[0]
-        else:
-            teams = self.season_totals.copy()
-
-        teams = teams[(teams["SEASON_ID"] == self.season) & (teams["TEAM_ID"] != 0)][
-            "TEAM_ID"
-        ].tolist()
+        teams = self._get_player_teams_for_season()
 
         if len(teams) > 1:
             self.shot_chart = []

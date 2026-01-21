@@ -1,6 +1,3 @@
-from time import sleep
-from typing import List
-
 import nba_api.stats.endpoints as nba
 import pandas as pd
 import requests
@@ -9,7 +6,7 @@ from nba_api.stats.static import teams
 from rich.progress import track
 
 from nbastatpy.standardize import standardize_dataframe
-from nbastatpy.utils import Formatter, PlayTypes
+from nbastatpy.utils import Formatter, PlayTypes, rate_limiter
 
 
 class Team:
@@ -66,7 +63,7 @@ class Team:
         self.logo = pic.content
         return self.logo
 
-    def get_roster(self, standardize: bool = False) -> List[pd.DataFrame]:
+    def get_roster(self, standardize: bool = False) -> list[pd.DataFrame]:
         """
         Retrieves the roster of the team for the specified season.
 
@@ -456,7 +453,7 @@ class Team:
         """
         self.player_onoff = pd.concat(
             nba.TeamPlayerOnOffDetails(
-                team_id=team.id,
+                team_id=self.id,
                 season=self.season,
                 season_type_all_star=self.season_type,
                 per_mode_detailed=self.permode,
@@ -610,7 +607,7 @@ class Team:
             except Exception:
                 pass  # Skip if API call fails
 
-            sleep(0.6)  # Rate limiting
+            rate_limiter.wait()  # Rate limiting
 
             # Get BoxScoreFourFactorsV3 data
             try:
@@ -631,7 +628,7 @@ class Team:
             except Exception:
                 pass  # Skip if API call fails
 
-            sleep(0.6)  # Rate limiting
+            rate_limiter.wait()  # Rate limiting
 
             advanced_stats_list.append(game_advanced)
 

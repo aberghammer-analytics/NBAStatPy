@@ -1,6 +1,6 @@
 [project]
 name = "nbastatpy"
-version = "0.4.0"  # Managed by release-please
+version = "0.4.1"  # Managed by release-please
 description = "An easy-to-use wrapper for nba_api to easily find data for a player, game, team, or season"
 readme = "README.md"
 requires-python = ">=3.10"
