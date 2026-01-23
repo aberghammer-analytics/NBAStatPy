@@ -106,7 +106,9 @@ class Player:
         Returns:
             pd.DataFrame: A DataFrame containing the common information of the player.
         """
-        df = nba.CommonPlayerInfo(self.id, league_id_nullable=self.league_id).get_data_frames()[0]
+        df = nba.CommonPlayerInfo(
+            self.id, league_id_nullable=self.league_id
+        ).get_data_frames()[0]
 
         if standardize:
             df = standardize_dataframe(df, data_type="player")
@@ -241,7 +243,9 @@ class Player:
             PIL.Image.Image: The headshot image of the player.
         """
         if self.league == "WNBA":
-            pic_url = f"https://cdn.wnba.com/headshots/wnba/latest/1040x760/{self.id}.png"
+            pic_url = (
+                f"https://cdn.wnba.com/headshots/wnba/latest/1040x760/{self.id}.png"
+            )
         else:
             pic_url = f"https://cdn.nba.com/headshots/nba/latest/1040x760/{self.id}.png"
         pic = requests.get(pic_url)

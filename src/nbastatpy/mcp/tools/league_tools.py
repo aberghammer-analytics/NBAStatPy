@@ -38,7 +38,9 @@ def get_league_leaders(
 
     # Use League class for season-specific leaders
     playoffs = season_type == "Playoffs"
-    league_obj = League(season_year=season, playoffs=playoffs, permode=per_mode, league=league)
+    league_obj = League(
+        season_year=season, playoffs=playoffs, permode=per_mode, league=league
+    )
     leaders = league_obj.get_league_leaders(
         stat_category, limit=limit, standardize=True
     )
@@ -116,7 +118,9 @@ def get_league_player_stats(
     Validators.validate_limit(limit, min_val=1, max_val=500)
 
     playoffs = season_type == "Playoffs"
-    league_obj = League(season_year=season, playoffs=playoffs, permode=per_mode, league=league)
+    league_obj = League(
+        season_year=season, playoffs=playoffs, permode=per_mode, league=league
+    )
 
     df = league_obj.get_player_stats(standardize=True)
 
@@ -170,7 +174,9 @@ def get_league_team_stats(
     Validators.validate_season_type(season_type)
 
     playoffs = season_type == "Playoffs"
-    league_obj = League(season_year=season, playoffs=playoffs, permode=per_mode, league=league)
+    league_obj = League(
+        season_year=season, playoffs=playoffs, permode=per_mode, league=league
+    )
 
     df = league_obj.get_team_stats(standardize=True)
 

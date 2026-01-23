@@ -121,7 +121,7 @@ class Team:
         dfs = nba.CommonTeamRoster(
             self.id,
             season=self.season,
-            league_id=self.league_id,
+            league_id_nullable=self.league_id,
         ).get_data_frames()
 
         if standardize:
@@ -212,7 +212,7 @@ class Team:
                 season=self.season,
                 season_type_all_star=self.season_type,
                 per_mode_detailed=self.permode,
-                league_id=self.league_id,
+                league_id_nullable=self.league_id,
             ).get_data_frames()
         ).drop(columns=drop_cols, errors="ignore")
         return self.general_splits
@@ -230,7 +230,7 @@ class Team:
                 season=self.season,
                 season_type_all_star=self.season_type,
                 per_mode_detailed=self.permode,
-                league_id=self.league_id,
+                league_id_nullable=self.league_id,
             ).get_data_frames()
         )
         return self.shooting_splits
@@ -243,7 +243,7 @@ class Team:
             pd.DataFrame: The franchise leaders data for the team.
         """
         self.leaders = nba.FranchiseLeaders(
-            team_id=self.id, league_id=self.league_id
+            team_id=self.id, league_id_nullable=self.league_id
         ).get_data_frames()[0]
         return self.leaders
 
@@ -271,7 +271,7 @@ class Team:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
-            league_id=self.league_id,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
         self.season_lineups["season"] = self.season
         self.season_lineups["season_type"] = self.season_type
@@ -309,7 +309,7 @@ class Team:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
-            league_id=self.league_id,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
         self.player_clutch["season"] = self.season
         self.player_clutch["season_type"] = self.season_type
@@ -347,7 +347,7 @@ class Team:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
-            league_id=self.league_id,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
         self.player_shot_locations["season"] = self.season
         self.player_shot_locations["season_type"] = self.season_type
@@ -369,7 +369,7 @@ class Team:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
-            league_id=self.league_id,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         df["season"] = self.season
@@ -416,7 +416,7 @@ class Team:
             team_id_nullable=self.id,
             season=self.season,
             season_type_all_star=self.season_type,
-            league_id=self.league_id,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
         self.player_hustle["season"] = self.season
         self.player_hustle["season_type"] = self.season_type
@@ -436,7 +436,7 @@ class Team:
             season_type_all_star=self.season_type,
             minutes_min=1,
             per_mode_detailed=self.permode,
-            league_id=self.league_id,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
         self.lineup_details["season"] = self.season
         self.lineup_details["season_type"] = self.season_type
@@ -455,7 +455,7 @@ class Team:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
-            league_id=self.league_id,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
         self.player_on_details["season"] = self.season
         self.player_on_details["season_type"] = self.season_type
@@ -531,7 +531,7 @@ class Team:
                 season=self.season,
                 season_type_all_star=self.season_type,
                 per_mode_detailed=self.permode,
-                league_id=self.league_id,
+                league_id_nullable=self.league_id,
             ).get_data_frames()[1:]
         )
         return self.player_onoff.reset_index(drop=True)
@@ -561,7 +561,7 @@ class Team:
             team_id=self.id,
             season=self.season,
             season_type_all_star=self.season_type,
-            league_id=self.league_id,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         # Filter to last n games if specified

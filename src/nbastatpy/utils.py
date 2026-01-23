@@ -88,10 +88,14 @@ class Validators:
     VALID_MEASURE_TYPES = {"Base", "Advanced", "Misc", "Scoring", "Usage"}
 
     # Valid NBA team abbreviations
-    VALID_NBA_TEAM_ABBREVIATIONS = {team["abbreviation"] for team in nba_teams.get_teams()}
+    VALID_NBA_TEAM_ABBREVIATIONS = {
+        team["abbreviation"] for team in nba_teams.get_teams()
+    }
 
     # Valid WNBA team abbreviations
-    VALID_WNBA_TEAM_ABBREVIATIONS = {team["abbreviation"] for team in nba_teams.get_wnba_teams()}
+    VALID_WNBA_TEAM_ABBREVIATIONS = {
+        team["abbreviation"] for team in nba_teams.get_wnba_teams()
+    }
 
     # Combined team abbreviations (for backwards compatibility)
     VALID_TEAM_ABBREVIATIONS = VALID_NBA_TEAM_ABBREVIATIONS
@@ -117,7 +121,9 @@ class Validators:
         return season_type
 
     @classmethod
-    def validate_team_abbreviation(cls, abbreviation: str, league: str | None = None) -> str:
+    def validate_team_abbreviation(
+        cls, abbreviation: str, league: str | None = None
+    ) -> str:
         """Validate and return the team abbreviation.
 
         Args:

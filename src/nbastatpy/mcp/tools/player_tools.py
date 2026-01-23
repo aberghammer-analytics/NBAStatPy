@@ -238,7 +238,10 @@ def get_player_play_type_stats(
 
     # Create League instance
     league_obj = League(
-        season_year=season_year, playoffs=playoffs, permode=normalized_permode, league=league
+        season_year=season_year,
+        playoffs=playoffs,
+        permode=normalized_permode,
+        league=league,
     )
 
     # Get synergy player data with standardization
@@ -323,7 +326,10 @@ def get_player_tracking_stats(
 
     # Create League instance
     league_obj = League(
-        season_year=season_year, playoffs=playoffs, permode=normalized_permode, league=league
+        season_year=season_year,
+        playoffs=playoffs,
+        permode=normalized_permode,
+        league=league,
     )
 
     # Get tracking player data with standardization
