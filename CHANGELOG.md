@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.5.0](https://github.com/aberghammer-analytics/NBAStatPy/compare/nbastatpy-v0.4.1...nbastatpy-v0.5.0) (2026-01-23)
+
+
+### Features
+
+* Add 6 new MCP tools, validation, and bug fixes ([#17](https://github.com/aberghammer-analytics/NBAStatPy/issues/17)) ([d44acae](https://github.com/aberghammer-analytics/NBAStatPy/commit/d44acaec705312fee39b21d7e3c02b1215f4e257))
+* add data standardization and validation ([c5fc869](https://github.com/aberghammer-analytics/NBAStatPy/commit/c5fc869530964dec63bf7052d3fe645957642362))
+* Add MCP integration for AI-powered NBA data access ([#13](https://github.com/aberghammer-analytics/NBAStatPy/issues/13)) ([388fa33](https://github.com/aberghammer-analytics/NBAStatPy/commit/388fa331983103cd159e4073fba865bc522bd97b))
+* simplify MCP server entry point to 'nbastatpy' ([#16](https://github.com/aberghammer-analytics/NBAStatPy/issues/16)) ([ee86c31](https://github.com/aberghammer-analytics/NBAStatPy/commit/ee86c31ff56ce5980e4ba7406af9c58a22069af9))
+* update release ([b10f99b](https://github.com/aberghammer-analytics/NBAStatPy/commit/b10f99bc3e107b796f9d9591961021fee7f2e12d))
+
+
+### Bug Fixes
+
+* correct nba_api parameter names for WNBA support ([#19](https://github.com/aberghammer-analytics/NBAStatPy/issues/19)) ([d1fc963](https://github.com/aberghammer-analytics/NBAStatPy/commit/d1fc963cdf7a53cc93a084769d8b0a8a806bc4bd))
+* Remove tests from publish workflow to avoid NBA API timeouts ([4909c30](https://github.com/aberghammer-analytics/NBAStatPy/commit/4909c304dfa4f800340c3b3e3937bfb43c5d3c9c))
+
 ## [0.4.1](https://github.com/aberghammer-analytics/NBAStatPy/compare/nbastatpy-v0.4.0...nbastatpy-v0.4.1) (2026-01-20)
 
 
