@@ -14,27 +14,31 @@ def get_league_leaders(
     per_mode: str = "PerGame",
     season_type: str = "Regular Season",
     limit: int = 25,
+    league: str = "NBA",
 ) -> list[dict]:
-    """Get NBA league leaders for a specific statistic.
+    """Get NBA or WNBA league leaders for a specific statistic.
 
     Args:
         stat_category: Statistic to rank by (e.g., "PTS", "points", "REB", "rebounds", "AST", "assists", "STL", "BLK", "FG_PCT", "FG3_PCT").
-        season: Season year (e.g., "2024", "2024-25"). Use "all-time" for career leaders. Defaults to current season.
+        season: Season year (e.g., "2024", "2024-25"). Use "all-time" for career leaders (NBA only). Defaults to current season.
         per_mode: Stats mode - "PerGame", "Totals", or "Per48". Defaults to "PerGame".
         season_type: "Regular Season" or "Playoffs". Defaults to "Regular Season".
         limit: Maximum number of leaders to return (1-100). Defaults to 25.
+        league: League to query - "NBA" or "WNBA". Defaults to "NBA".
     """
     # Validate parameters
     Validators.validate_season_type(season_type)
     Validators.validate_limit(limit, min_val=1, max_val=100)
 
-    # Check for all-time request (uses different endpoint)
+    # Check for all-time request (uses different endpoint - NBA only)
     if season and season.lower() == "all-time":
+        if league.upper() != "NBA":
+            raise ValueError("All-time leaders are only available for NBA")
         return _get_alltime_leaders(stat_category, per_mode, season_type, limit)
 
     # Use League class for season-specific leaders
     playoffs = season_type == "Playoffs"
-    league_obj = League(season_year=season, playoffs=playoffs, permode=per_mode)
+    league_obj = League(season_year=season, playoffs=playoffs, permode=per_mode, league=league)
     leaders = league_obj.get_league_leaders(
         stat_category, limit=limit, standardize=True
     )
@@ -75,10 +79,11 @@ def get_league_player_stats(
     per_mode: str = "PerGame",
     season_type: str = "Regular Season",
     limit: int = 50,
+    league: str = "NBA",
 ) -> list[dict]:
     """Get league-wide player statistics for a season.
 
-    Returns statistics for all NBA players in a given season, sorted by points
+    Returns statistics for all players in a given season, sorted by points
     scored by default. Useful for comparing players across the league.
 
     Args:
@@ -90,6 +95,7 @@ def get_league_player_stats(
             - "Totals": Raw totals
         season_type: "Regular Season" or "Playoffs". Defaults to "Regular Season".
         limit: Maximum number of players to return (1-500). Defaults to 50.
+        league: League to query - "NBA" or "WNBA". Defaults to "NBA".
 
     Returns:
         List of player statistics, each containing:
@@ -101,18 +107,18 @@ def get_league_player_stats(
         - plus_minus: Plus/minus rating
 
     Examples:
-        - Get top 50 players: get_league_player_stats()
+        - Get top 50 NBA players: get_league_player_stats()
+        - Get WNBA player stats: get_league_player_stats(league="WNBA")
         - Get playoff stats: get_league_player_stats(season_type="Playoffs")
-        - Get per-36 stats: get_league_player_stats(per_mode="Per36")
     """
     # Validate parameters
     Validators.validate_season_type(season_type)
     Validators.validate_limit(limit, min_val=1, max_val=500)
 
     playoffs = season_type == "Playoffs"
-    league = League(season_year=season, playoffs=playoffs, permode=per_mode)
+    league_obj = League(season_year=season, playoffs=playoffs, permode=per_mode, league=league)
 
-    df = league.get_player_stats(standardize=True)
+    df = league_obj.get_player_stats(standardize=True)
 
     # Sort by points and limit results
     pts_col = "pts" if "pts" in df.columns else "PTS"
@@ -129,10 +135,11 @@ def get_league_team_stats(
     season: str | None = None,
     per_mode: str = "PerGame",
     season_type: str = "Regular Season",
+    league: str = "NBA",
 ) -> list[dict]:
     """Get league-wide team statistics for a season.
 
-    Returns statistics for all 30 NBA teams in a given season.
+    Returns statistics for all teams in a given season.
     Useful for comparing team performance across the league.
 
     Args:
@@ -142,6 +149,7 @@ def get_league_team_stats(
             - "Per100Possessions": Per 100 possessions
             - "Totals": Raw totals
         season_type: "Regular Season" or "Playoffs". Defaults to "Regular Season".
+        league: League to query - "NBA" or "WNBA". Defaults to "NBA".
 
     Returns:
         List of team statistics, each containing:
@@ -154,16 +162,16 @@ def get_league_team_stats(
         - plus_minus: Plus/minus rating
 
     Examples:
-        - Get all team stats: get_league_team_stats()
+        - Get all NBA team stats: get_league_team_stats()
+        - Get WNBA team stats: get_league_team_stats(league="WNBA")
         - Get playoff team stats: get_league_team_stats(season_type="Playoffs")
-        - Get 2023 season stats: get_league_team_stats(season="2023")
     """
     # Validate parameters
     Validators.validate_season_type(season_type)
 
     playoffs = season_type == "Playoffs"
-    league = League(season_year=season, playoffs=playoffs, permode=per_mode)
+    league_obj = League(season_year=season, playoffs=playoffs, permode=per_mode, league=league)
 
-    df = league.get_team_stats(standardize=True)
+    df = league_obj.get_team_stats(standardize=True)
 
     return cast(list[dict[Any, Any]], df.to_dict(orient="records"))

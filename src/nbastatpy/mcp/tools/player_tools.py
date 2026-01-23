@@ -6,8 +6,10 @@ from nbastatpy.utils import Formatter, PlayTypes, Validators
 
 
 @mcp.tool()
-def get_player_salary(player_name: str, season: str | None = None) -> list[dict]:
+def get_player_salary(player_name: str, season: str | None = None) -> dict:
     """Get player salary history and projections.
+
+    Note: Salary data is only available for NBA players. WNBA salary data is not supported.
 
     Args:
         player_name: Player name (e.g., "LeBron James", "Giannis")
@@ -20,7 +22,13 @@ def get_player_salary(player_name: str, season: str | None = None) -> list[dict]
 
     if season:
         salary = salary[salary["season"] == season]
-    return cast(list[dict[Any, Any]], salary.to_dict(orient="records"))
+
+    return {
+        "league": player.league,
+        "player_name": player.name,
+        "player_id": player.id,
+        "salaries": cast(list[dict[Any, Any]], salary.to_dict(orient="records")),
+    }
 
 
 @mcp.tool()
@@ -31,15 +39,17 @@ def get_player_game_logs(
     per_mode: str = "PerGame",
     season: str | None = None,
     season_type: str = "Regular Season",
-) -> list[dict]:
-    """Get recent game logs for an NBA player with detailed statistics.
+) -> dict:
+    """Get recent game logs for an NBA or WNBA player with detailed statistics.
 
     Returns game-by-game stats for the player's most recent games. Supports different
     stat types (basic, advanced, usage, etc.) and different calculation modes
     (per game, per 36 minutes, per 100 possessions, etc.).
 
+    The player's league (NBA or WNBA) is auto-detected from their name.
+
     Args:
-        player_name: Player name (e.g., "LeBron James", "Giannis Antetokounmpo").
+        player_name: Player name (e.g., "LeBron James", "A'ja Wilson").
         last_n_games: Number of recent games to retrieve (1-82). Defaults to 10.
         stat_type: Type of statistics to return:
             - "Base": Traditional stats (PTS, REB, AST, FG%, etc.)
@@ -60,8 +70,8 @@ def get_player_game_logs(
 
     Examples:
         - Get LeBron's last 5 games: get_player_game_logs("LeBron James", last_n_games=5)
-        - Get Jokic's last 10 games with advanced stats: get_player_game_logs("Nikola Jokic", stat_type="Advanced")
-        - Get Curry's per-100 stats: get_player_game_logs("Stephen Curry", per_mode="Per100Possessions")
+        - Get A'ja Wilson's games: get_player_game_logs("A'ja Wilson", last_n_games=5)
+        - Get Jokic's advanced stats: get_player_game_logs("Nikola Jokic", stat_type="Advanced")
     """
     # Validate parameters
     Validators.validate_last_n_games(last_n_games)
@@ -91,7 +101,12 @@ def get_player_game_logs(
         standardize=True,
     )
 
-    return cast(list[dict[Any, Any]], game_logs.to_dict(orient="records"))
+    return {
+        "league": player.league,
+        "player_name": player.name,
+        "player_id": player.id,
+        "games": cast(list[dict[Any, Any]], game_logs.to_dict(orient="records")),
+    }
 
 
 @mcp.tool()
@@ -100,14 +115,16 @@ def get_player_career_stats(
     stat_type: str = "Base",
     per_mode: str = "PerGame",
     season_type: str = "Regular Season",
-) -> list[dict]:
+) -> dict:
     """Get a player's career statistics broken down by season.
 
     Returns season-by-season career stats for a player. Supports different stat types
     (traditional, advanced) and different calculation modes (per game, per 36, totals, etc.).
 
+    The player's league (NBA or WNBA) is auto-detected from their name.
+
     Args:
-        player_name: Player name (e.g., "LeBron James", "Giannis Antetokounmpo").
+        player_name: Player name (e.g., "LeBron James", "A'ja Wilson").
         stat_type: Type of statistics to return:
             - "Base": Traditional stats (PTS, REB, AST, FG%, etc.)
             - "Advanced": Advanced metrics (TS%, EFG%, OFF_RATING, DEF_RATING, etc.)
@@ -125,8 +142,8 @@ def get_player_career_stats(
 
     Examples:
         - Get LeBron's career stats: get_player_career_stats("LeBron James")
-        - Get Jokic's advanced career stats: get_player_career_stats("Nikola Jokic", stat_type="Advanced")
-        - Get Curry's career per-100 stats: get_player_career_stats("Stephen Curry", per_mode="Per100Possessions")
+        - Get A'ja Wilson's career: get_player_career_stats("A'ja Wilson")
+        - Get Jokic's advanced stats: get_player_career_stats("Nikola Jokic", stat_type="Advanced")
     """
     # Validate season_type
     Validators.validate_season_type(season_type)
@@ -151,7 +168,12 @@ def get_player_career_stats(
         standardize=True,
     )
 
-    return cast(list[dict[Any, Any]], career_stats.to_dict(orient="records"))
+    return {
+        "league": player.league,
+        "player_name": player.name,
+        "player_id": player.id,
+        "seasons": cast(list[dict[Any, Any]], career_stats.to_dict(orient="records")),
+    }
 
 
 @mcp.tool()
@@ -162,8 +184,9 @@ def get_player_play_type_stats(
     season: str | None = None,
     per_mode: str = "PerGame",
     season_type: str = "Regular Season",
+    league: str = "NBA",
 ) -> list[dict]:
-    """Get NBA play type (synergy) statistics for players.
+    """Get NBA or WNBA play type (synergy) statistics for players.
 
     Returns play type data showing how players perform in different situations like
     isolation, pick-and-roll, spot-up shooting, post-ups, and more. Useful for
@@ -183,17 +206,18 @@ def get_player_play_type_stats(
             - "OffRebound": Offensive rebound putbacks
             - "Misc": Miscellaneous plays
             - "all": All play types (default)
-        player_name: Optional player name to filter results (e.g., "LeBron", "Giannis").
+        player_name: Optional player name to filter results (e.g., "LeBron", "A'ja Wilson").
             Uses case-insensitive partial matching. If not provided, returns all players.
         offensive: True for offensive stats, False for defensive. Defaults to True.
         season: Season year (e.g., "2024", "2024-25"). Defaults to current season.
         per_mode: "PerGame" or "Totals". Defaults to "PerGame".
         season_type: "Regular Season" or "Playoffs". Defaults to "Regular Season".
+        league: League to query - "NBA" or "WNBA". Defaults to "NBA".
 
     Examples:
         - Get all isolation stats: get_player_play_type_stats(play_type="Isolation")
         - Get LeBron's play type stats: get_player_play_type_stats(player_name="LeBron")
-        - Get all play types for Giannis: get_player_play_type_stats(play_type="all", player_name="Giannis")
+        - Get WNBA play type stats: get_player_play_type_stats(league="WNBA")
         - Get defensive transition stats: get_player_play_type_stats(play_type="Transition", offensive=False)
     """
     # Validate parameters
@@ -213,12 +237,12 @@ def get_player_play_type_stats(
     normalized_permode = PlayTypes.PERMODE[permode_key]
 
     # Create League instance
-    league = League(
-        season_year=season_year, playoffs=playoffs, permode=normalized_permode
+    league_obj = League(
+        season_year=season_year, playoffs=playoffs, permode=normalized_permode, league=league
     )
 
     # Get synergy player data with standardization
-    df = league.get_synergy_player(
+    df = league_obj.get_synergy_player(
         play_type=play_type, offensive=offensive, standardize=True
     )
 
@@ -246,8 +270,9 @@ def get_player_tracking_stats(
     season: str | None = None,
     per_mode: str = "PerGame",
     season_type: str = "Regular Season",
+    league: str = "NBA",
 ) -> list[dict]:
-    """Get NBA tracking statistics for players.
+    """Get NBA or WNBA tracking statistics for players.
 
     Returns player tracking data including speed/distance, possessions, drives, passing,
     catch-and-shoot, pull-up shots, post touches, paint touches, elbow touches, and more.
@@ -267,16 +292,17 @@ def get_player_tracking_stats(
             - "PaintTouch": Paint touch stats
             - "Efficiency": Overall efficiency (default)
             - "all": All tracking types
-        player_name: Optional player name to filter results (e.g., "LeBron", "Giannis").
+        player_name: Optional player name to filter results (e.g., "LeBron", "A'ja Wilson").
             Uses case-insensitive partial matching. If not provided, returns all players.
         season: Season year (e.g., "2024", "2024-25"). Defaults to current season.
         per_mode: "PerGame" or "Totals". Defaults to "PerGame".
         season_type: "Regular Season" or "Playoffs". Defaults to "Regular Season".
+        league: League to query - "NBA" or "WNBA". Defaults to "NBA".
 
     Examples:
         - Get all player drive stats: get_player_tracking_stats(track_type="Drives")
         - Get LeBron's tracking stats: get_player_tracking_stats(player_name="LeBron")
-        - Get all speed/distance for Giannis: get_player_tracking_stats(track_type="SpeedDistance", player_name="Giannis")
+        - Get WNBA tracking stats: get_player_tracking_stats(league="WNBA")
         - Get all tracking types: get_player_tracking_stats(track_type="all")
     """
     # Validate parameters
@@ -296,12 +322,12 @@ def get_player_tracking_stats(
     normalized_permode = PlayTypes.PERMODE[permode_key]
 
     # Create League instance
-    league = League(
-        season_year=season_year, playoffs=playoffs, permode=normalized_permode
+    league_obj = League(
+        season_year=season_year, playoffs=playoffs, permode=normalized_permode, league=league
     )
 
     # Get tracking player data with standardization
-    df = league.get_tracking_player(track_type=track_type, standardize=True)
+    df = league_obj.get_tracking_player(track_type=track_type, standardize=True)
 
     # Filter by player name if provided (case-insensitive partial match)
     if player_name:
@@ -322,19 +348,22 @@ def get_player_tracking_stats(
 
 @mcp.tool()
 def get_player_info(player_name: str) -> dict:
-    """Get biographical and career information for an NBA player.
+    """Get biographical and career information for an NBA or WNBA player.
 
     Returns detailed player information including physical attributes, draft details,
     team history, and career metadata. Use this to answer questions about a player's
     background, height, weight, birthdate, college, draft position, etc.
 
+    The player's league (NBA or WNBA) is auto-detected from their name.
+
     Args:
-        player_name: Player name (e.g., "LeBron James", "Giannis Antetokounmpo").
+        player_name: Player name (e.g., "LeBron James", "A'ja Wilson").
             Accepts full names, partial names, or player IDs.
 
     Returns:
         Dictionary containing player information:
-        - player_id: NBA player ID
+        - league: "NBA" or "WNBA"
+        - player_id: Player ID
         - first_name, last_name, full_name: Name details
         - birthdate: Date of birth
         - school: College/school attended
@@ -350,7 +379,7 @@ def get_player_info(player_name: str) -> dict:
 
     Examples:
         - Get LeBron's info: get_player_info("LeBron James")
-        - Get Giannis' info: get_player_info("Giannis")
+        - Get A'ja Wilson's info: get_player_info("A'ja Wilson")
     """
     player = Player(player_name)
     info_df = player.get_common_info(standardize=True)
@@ -359,6 +388,7 @@ def get_player_info(player_name: str) -> dict:
     if len(info_df) > 0:
         info_dict = info_df.iloc[0].to_dict()
         # Add basic player identifiers
+        info_dict["league"] = player.league
         info_dict["player_id"] = player.id
         info_dict["full_name"] = player.name
         info_dict["first_name"] = player.first_name
@@ -367,6 +397,7 @@ def get_player_info(player_name: str) -> dict:
         return cast(dict[Any, Any], info_dict)
 
     return {
+        "league": player.league,
         "player_id": player.id,
         "full_name": player.name,
         "is_active": player.is_active,

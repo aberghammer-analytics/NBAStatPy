@@ -9,6 +9,7 @@ from nba_api.stats.endpoints import leaguegamefinder
 from nba_api.stats.static import players, teams
 from PIL import Image
 
+from nbastatpy.config import LeagueID
 from nbastatpy.standardize import standardize_dataframe
 from nbastatpy.utils import Formatter, MeasureTypes, PlayTypes
 
@@ -24,38 +25,74 @@ class Player:
         """
         Initializes a Player object.
 
+        Automatically detects whether the player is in the NBA or WNBA based on their
+        name or ID. NBA is checked first, then WNBA.
+
         Args:
             player (str): The name or ID of the player.
             season_year (str, optional): The season year. Defaults to None.
             playoffs (bool, optional): Whether to retrieve playoff data. Defaults to False.
             permode (str, optional): The per mode for the player's stats. Defaults to "PERGAME".
+
+        Raises:
+            ValueError: If the player is not found in either NBA or WNBA.
+
+        Examples:
+            >>> player = Player("LeBron James")  # Auto-detects NBA
+            >>> player.league
+            'NBA'
+            >>> player = Player("A'ja Wilson")   # Auto-detects WNBA
+            >>> player.league
+            'WNBA'
         """
         self.permode = PlayTypes.PERMODE[
             permode.replace("_", "").replace("-", "").upper()
         ]
+
+        # Try NBA first
         self.name_meta = players.find_player_by_id(player)
         if self.name_meta:
             self.name_meta = [self.name_meta]
+            self.league = "NBA"
         else:
             self.name_meta = players.find_players_by_full_name(player)
+            if self.name_meta:
+                self.league = "NBA"
+            else:
+                # Try WNBA
+                self.name_meta = players.find_wnba_player_by_id(player)
+                if self.name_meta:
+                    self.name_meta = [self.name_meta]
+                    self.league = "WNBA"
+                else:
+                    self.name_meta = players.find_wnba_players_by_full_name(player)
+                    if self.name_meta:
+                        self.league = "WNBA"
 
         if not self.name_meta:
-            raise ValueError(f"{player} not found")
+            raise ValueError(f"{player} not found in NBA or WNBA")
+
         if len(self.name_meta) > 1:
             logger.warning(
                 f"Multiple players returned. Using: {self.name_meta[0]['full_name']}"
             )
+
         self.id = self.name_meta[0]["id"]
         self.name = self.name_meta[0]["full_name"]
         self.first_name = self.name_meta[0]["first_name"]
         self.last_name = self.name_meta[0]["last_name"]
         self.is_active = self.name_meta[0]["is_active"]
 
+        # Set league ID for API calls
+        self.league_id = LeagueID.from_string(self.league)
+
         if season_year:
-            self.season_year = season_year
+            self.season_year = Formatter.normalize_season_year(season_year)
         else:
-            self.season_year = Formatter.get_current_season_year()
-        self.season = Formatter.format_season(self.season_year)
+            self.season_year = Formatter.get_current_season_year(self.league)
+
+        # Format season based on league (WNBA uses single year format)
+        self.season = Formatter.format_season_for_league(self.season_year, self.league)
         self.season_type = "Regular Season"
         if playoffs:
             self.season_type = "Playoffs"
@@ -69,7 +106,7 @@ class Player:
         Returns:
             pd.DataFrame: A DataFrame containing the common information of the player.
         """
-        df = nba.CommonPlayerInfo(self.id).get_data_frames()[0]
+        df = nba.CommonPlayerInfo(self.id, league_id_nullable=self.league_id).get_data_frames()[0]
 
         if standardize:
             df = standardize_dataframe(df, data_type="player")
@@ -85,12 +122,21 @@ class Player:
         """
         Retrieves the salary information for a player from hoopshype.com.
 
+        Note: Salary data is only available for NBA players. WNBA salary data
+        is not currently supported.
+
         Args:
             standardize: Whether to apply data standardization
 
         Returns:
             pd.DataFrame: A DataFrame containing the salary information for the player.
+
+        Raises:
+            NotImplementedError: If the player is a WNBA player.
         """
+        if self.league == "WNBA":
+            raise NotImplementedError("Salary data is not available for WNBA players")
+
         salary_url = f"https://hoopshype.com/player/{self.first_name}-{self.last_name}/salary/".lower()
         result = requests.get(salary_url)
         soup = BeautifulSoup(result.content, features="html.parser")
@@ -194,7 +240,10 @@ class Player:
         Returns:
             PIL.Image.Image: The headshot image of the player.
         """
-        pic_url = f"https://cdn.nba.com/headshots/nba/latest/1040x760/{self.id}.png"
+        if self.league == "WNBA":
+            pic_url = f"https://cdn.wnba.com/headshots/wnba/latest/1040x760/{self.id}.png"
+        else:
+            pic_url = f"https://cdn.nba.com/headshots/nba/latest/1040x760/{self.id}.png"
         pic = requests.get(pic_url)
         self.headshot = Image.open(BytesIO(pic.content))
         return self.headshot
@@ -208,7 +257,9 @@ class Player:
         Returns:
             pd.DataFrame: 2 dataframes, season totals and career
         """
-        df_list = nba.PlayerCareerStats(player_id=self.id).get_data_frames()
+        df_list = nba.PlayerCareerStats(
+            player_id=self.id, league_id_nullable=self.league_id
+        ).get_data_frames()
 
         if standardize:
             self.career_totals = standardize_dataframe(df_list[1], data_type="player")
@@ -266,6 +317,7 @@ class Player:
             measure_type_detailed=normalized_measure,
             per_mode_detailed=actual_permode,
             season_type_playoffs=self.season_type,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[1]  # Index 1 = ByYearPlayerDashboard
 
         if standardize:
@@ -283,6 +335,7 @@ class Player:
                 season=self.season,
                 season_type_playoffs=self.season_type,
                 per_mode_detailed=self.permode,
+                league_id_nullable=self.league_id,
             ).get_data_frames()
         )
 
@@ -301,6 +354,7 @@ class Player:
                 season=self.season,
                 season_type_playoffs=self.season_type,
                 per_mode_detailed=self.permode,
+                league_id_nullable=self.league_id,
             ).get_data_frames()
         )
         return self.game_splits
@@ -312,6 +366,7 @@ class Player:
                 season=self.season,
                 season_type_playoffs=self.season_type,
                 per_mode_detailed=self.permode,
+                league_id_nullable=self.league_id,
             ).get_data_frames()
         )
         return self.shooting_splits
@@ -364,6 +419,7 @@ class Player:
             player_id_nullable=self.id,
             season_nullable=self.season,
             season_type_nullable=self.season_type,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         if standardize:
@@ -435,6 +491,7 @@ class Player:
             measure_type_player_game_logs_nullable=normalized_measure,
             per_mode_simple_nullable=actual_permode,
             last_n_games_nullable=last_n_games,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         if standardize:
@@ -465,6 +522,7 @@ class Player:
                 season=self.season,
                 season_type_playoffs=self.season_type,
                 per_mode_simple=self.permode,
+                league_id_nullable=self.league_id,
             ).get_data_frames()[0]
         else:
             self.matchups = nba.LeagueSeasonMatchups(
@@ -472,6 +530,7 @@ class Player:
                 season=self.season,
                 season_type_playoffs=self.season_type,
                 per_mode_simple=self.permode,
+                league_id_nullable=self.league_id,
             ).get_data_frames()[0]
         return self.matchups
 
@@ -487,6 +546,7 @@ class Player:
                 season=self.season,
                 season_type_playoffs=self.season_type,
                 per_mode_detailed=self.permode,
+                league_id_nullable=self.league_id,
             ).get_data_frames()
         )
         return self.clutch
@@ -531,6 +591,7 @@ class Player:
                             season=self.season,
                             season_type_all_star=self.season_type,
                             per_mode_simple=self.permode,
+                            league_id_nullable=self.league_id,
                         ).get_data_frames()
                     )
                 )
@@ -545,6 +606,7 @@ class Player:
                     season=self.season,
                     season_type_all_star=self.season_type,
                     per_mode_simple=self.permode,
+                    league_id_nullable=self.league_id,
                 ).get_data_frames()
             )
 
@@ -576,6 +638,7 @@ class Player:
                             season=self.season,
                             season_type_all_star=self.season_type,
                             per_mode_simple=self.permode,
+                            league_id_nullable=self.league_id,
                         ).get_data_frames()
                     )
                 )
@@ -590,6 +653,7 @@ class Player:
                     season=self.season,
                     season_type_all_star=self.season_type,
                     per_mode_simple=self.permode,
+                    league_id_nullable=self.league_id,
                 ).get_data_frames()
             )
 
@@ -617,7 +681,16 @@ class Player:
         Returns:
             pd.DataFrame: A DataFrame containing the defensive statistics of the player against the specified team.
         """
-        opp_tm_id = teams.find_team_by_abbreviation(opposing_team)["id"]
+        # Look up team in the appropriate league
+        if self.league == "WNBA":
+            opp_tm_info = teams.find_wnba_team_by_abbreviation(opposing_team)
+        else:
+            opp_tm_info = teams.find_team_by_abbreviation(opposing_team)
+
+        if not opp_tm_info:
+            raise ValueError(f"Team '{opposing_team}' not found in {self.league}")
+
+        opp_tm_id = opp_tm_info["id"]
 
         self.defense_against_team = nba.PlayerDashPtShotDefend(
             player_id=self.id,
@@ -625,6 +698,7 @@ class Player:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_simple=self.permode,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
         return self.defense_against_team
 
@@ -648,6 +722,7 @@ class Player:
                             season=self.season,
                             season_type_all_star=self.season_type,
                             per_mode_simple=self.permode,
+                            league_id_nullable=self.league_id,
                         ).get_data_frames()
                     )
                 )
@@ -662,6 +737,7 @@ class Player:
                     season=self.season,
                     season_type_all_star=self.season_type,
                     per_mode_simple=self.permode,
+                    league_id_nullable=self.league_id,
                 ).get_data_frames()
             )
 
@@ -697,6 +773,7 @@ class Player:
                         team_id=team,
                         season_nullable=self.season,
                         season_type_all_star=self.season_type,
+                        league_id_nullable=self.league_id,
                     ).get_data_frames()[0]
                 )
 
@@ -708,6 +785,7 @@ class Player:
                 team_id=teams[0],
                 season_nullable=self.season,
                 season_type_all_star=self.season_type,
+                league_id_nullable=self.league_id,
             ).get_data_frames()[0]
 
         return self.shot_chart

@@ -47,15 +47,16 @@ def get_recent_games_summary(
     last_n_days: int = 7,
     season: str | None = None,
     season_type: str = "Regular Season",
+    league: str = "NBA",
 ) -> list[dict]:
-    """Get NBA game summaries for the last N days.
+    """Get NBA or WNBA game summaries for the last N days.
 
     Returns game scores, matchups, and team statistics for all games
     played within the specified time period. Each game includes both
     teams' stats for easy comparison.
 
     Use this tool to answer questions like "What games were played this weekend?"
-    or "Give me a summary of yesterday's NBA games."
+    or "Give me a summary of yesterday's games."
 
     Args:
         last_n_days: Number of days to look back (1-365). Defaults to 7.
@@ -64,6 +65,7 @@ def get_recent_games_summary(
             - Use 7 for past week
         season: Season year (e.g., "2024", "2024-25"). Defaults to current season.
         season_type: "Regular Season" or "Playoffs". Defaults to "Regular Season".
+        league: League to query - "NBA" or "WNBA". Defaults to "NBA".
 
     Returns:
         List of game summaries, each containing:
@@ -83,10 +85,10 @@ def get_recent_games_summary(
     # Setup League instance
     season_year = Formatter.normalize_season_year(season) if season else None
     playoffs = season_type == "Playoffs"
-    league = League(season_year=season_year, playoffs=playoffs)
+    league_obj = League(season_year=season_year, playoffs=playoffs, league=league)
 
     # Get all team games (1 API call)
-    team_games = league.get_team_games(standardize=True)
+    team_games = league_obj.get_team_games(standardize=True)
 
     # Filter to recent games
     recent_games = _filter_by_date_range(team_games, last_n_days)
@@ -166,8 +168,9 @@ def get_recent_games_player_stats(
     season: str | None = None,
     season_type: str = "Regular Season",
     team_abbreviation: str | None = None,
+    league: str = "NBA",
 ) -> list[dict]:
-    """Get full player boxscores for NBA games in the last N days.
+    """Get full player boxscores for NBA or WNBA games in the last N days.
 
     Returns detailed player statistics for all games played within
     the specified time period. Can optionally filter to a specific team.
@@ -182,9 +185,10 @@ def get_recent_games_player_stats(
             - Use 7 for past week
         season: Season year (e.g., "2024", "2024-25"). Defaults to current season.
         season_type: "Regular Season" or "Playoffs". Defaults to "Regular Season".
-        team_abbreviation: Optional NBA team abbreviation to filter results
-            (e.g., "LAL", "BOS", "MIL"). If provided, only returns players from
+        team_abbreviation: Optional team abbreviation to filter results
+            (e.g., "LAL", "BOS", "LVA"). If provided, only returns players from
             games involving that team.
+        league: League to query - "NBA" or "WNBA". Defaults to "NBA".
 
     Returns:
         List of games, each containing:
@@ -203,10 +207,10 @@ def get_recent_games_player_stats(
     # Setup League instance
     season_year = Formatter.normalize_season_year(season) if season else None
     playoffs = season_type == "Playoffs"
-    league = League(season_year=season_year, playoffs=playoffs)
+    league_obj = League(season_year=season_year, playoffs=playoffs, league=league)
 
     # Get all player games (1 API call)
-    player_games = league.get_player_games(standardize=True)
+    player_games = league_obj.get_player_games(standardize=True)
 
     # Filter to recent games
     recent_games = _filter_by_date_range(player_games, last_n_days)
@@ -281,39 +285,44 @@ def get_recent_games_player_stats(
 def get_game_boxscore(
     game_id: str,
     include_advanced: bool = False,
+    league: str = "NBA",
 ) -> dict:
-    """Get the boxscore for a specific NBA game.
+    """Get the boxscore for a specific NBA or WNBA game.
 
     Returns detailed player and team statistics for a completed game.
     Optionally includes advanced metrics like offensive/defensive rating,
     true shooting percentage, and efficiency metrics.
 
     Args:
-        game_id: The NBA game ID (e.g., "0022301148", "22301148").
+        game_id: The game ID (e.g., "0022301148", "22301148").
             IDs are automatically zero-padded to 10 digits.
         include_advanced: Whether to include advanced statistics.
             When True, returns additional metrics like OFF_RATING, DEF_RATING,
             NET_RATING, TS_PCT, EFG_PCT, PIE. Defaults to False.
+        league: League for the game - "NBA" or "WNBA". Defaults to "NBA".
 
     Returns:
         Dictionary containing:
         - game_id: The formatted game ID
+        - league: "NBA" or "WNBA"
         - player_stats: List of player boxscore entries
         - team_stats: List of team boxscore entries
         - advanced_player_stats: (if include_advanced=True) Advanced player metrics
         - advanced_team_stats: (if include_advanced=True) Advanced team metrics
 
     Examples:
-        - Get basic boxscore: get_game_boxscore("0022301148")
-        - Get boxscore with advanced stats: get_game_boxscore("0022301148", include_advanced=True)
+        - Get NBA boxscore: get_game_boxscore("0022301148")
+        - Get WNBA boxscore: get_game_boxscore("0041400406", league="WNBA")
+        - With advanced stats: get_game_boxscore("0022301148", include_advanced=True)
     """
-    game = Game(game_id)
+    game = Game(game_id, league=league)
 
     # Get traditional boxscore
     boxscore_dfs = game.get_boxscore(standardize=True)
 
     result: dict[str, Any] = {
         "game_id": game.game_id,
+        "league": game.league,
         "player_stats": [],
         "team_stats": [],
     }
@@ -339,17 +348,19 @@ def get_game_boxscore(
 def get_game_playbyplay(
     game_id: str,
     period: int | None = None,
+    league: str = "NBA",
 ) -> list[dict]:
-    """Get play-by-play data for a specific NBA game.
+    """Get play-by-play data for a specific NBA or WNBA game.
 
     Returns a chronological list of all plays in the game, including scores,
     shot attempts, turnovers, fouls, substitutions, and other events.
 
     Args:
-        game_id: The NBA game ID (e.g., "0022301148", "22301148").
+        game_id: The game ID (e.g., "0022301148", "22301148").
             IDs are automatically zero-padded to 10 digits.
         period: Optional period to filter (1-4 for quarters, 5+ for OT).
             If not provided, returns all periods.
+        league: League for the game - "NBA" or "WNBA". Defaults to "NBA".
 
     Returns:
         List of play-by-play entries, each containing:
@@ -363,10 +374,10 @@ def get_game_playbyplay(
 
     Examples:
         - Get full play-by-play: get_game_playbyplay("0022301148")
+        - Get WNBA play-by-play: get_game_playbyplay("0041400406", league="WNBA")
         - Get 4th quarter plays: get_game_playbyplay("0022301148", period=4)
-        - Get overtime plays: get_game_playbyplay("0022301148", period=5)
     """
-    game = Game(game_id)
+    game = Game(game_id, league=league)
     pbp_df = game.get_playbyplay(standardize=True)
 
     # Filter by period if specified
@@ -409,24 +420,28 @@ def get_live_games(
     team_abbreviation: str | None = None,
     include_boxscore: bool = False,
     stat_type: str = "summary",
+    league: str = "NBA",
 ) -> list[dict]:
-    """Get live/current NBA games with scores and status.
+    """Get live/current NBA or WNBA games with scores and status.
 
-    Returns real-time information about today's NBA games including
+    Returns real-time information about today's games including
     scores, game status, and optionally detailed player statistics.
 
     Use this tool to answer questions like "What NBA games are on right now?"
     or "What's the score of the Lakers game?"
 
+    Note: Live data availability may vary by league and season.
+
     Args:
-        team_abbreviation: Optional NBA team abbreviation to filter results
-            (e.g., "LAL", "BOS", "MIL"). If provided, only returns games
+        team_abbreviation: Optional team abbreviation to filter results
+            (e.g., "LAL", "BOS", "LVA"). If provided, only returns games
             involving that team.
         include_boxscore: Whether to include detailed player statistics.
             When True, fetches live boxscore data for each game.
             Defaults to False for faster response.
         stat_type: Type of boxscore data to include when include_boxscore=True.
             Options: "summary" (default), "traditional", "advanced", "all".
+        league: League to query - "NBA" or "WNBA". Defaults to "NBA".
 
     Returns:
         List of game dictionaries, each containing:
@@ -498,7 +513,7 @@ def get_live_games(
         # Add boxscore if requested
         if include_boxscore and game.get("gameId"):
             try:
-                game_obj = Game(game["gameId"])
+                game_obj = Game(game["gameId"], league=league)
                 boxscore_dfs = game_obj.get_live_boxscore(stat_type=stat_type)
                 game_dict["boxscore"] = [
                     df.to_dict(orient="records") for df in boxscore_dfs

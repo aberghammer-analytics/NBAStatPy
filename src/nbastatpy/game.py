@@ -2,7 +2,7 @@ import nba_api.stats.endpoints as nba
 import pandas as pd
 from nba_api.live.nba.endpoints import boxscore as live_boxscore
 
-from nbastatpy.config import LiveBoxscoreColumns
+from nbastatpy.config import LeagueID, LiveBoxscoreColumns
 from nbastatpy.standardize import standardize_dataframe
 from nbastatpy.utils import Formatter
 
@@ -64,13 +64,21 @@ def _filter_columns(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
 
 
 class Game:
-    def __init__(self, game_id: str):
-        """This represents a game.  Given an ID, you can get boxscore (and other) information through one of the 'get' methods
+    def __init__(self, game_id: str, league: str = "NBA"):
+        """This represents a game. Given an ID, you can get boxscore (and other) information through one of the 'get' methods.
 
         Args:
-            game_id (str): string with 10 digits
+            game_id (str): String with 10 digits (will be zero-padded if shorter).
+            league (str): League identifier ("NBA" or "WNBA"). Defaults to "NBA".
+                Required for WNBA games since game IDs don't indicate league.
+
+        Examples:
+            >>> game = Game("0021800836")                # NBA game
+            >>> game = Game("0041400406", league="WNBA") # WNBA game
         """
         self.game_id = Formatter.format_game_id(game_id)
+        self.league = league.upper()
+        self.league_id = LeagueID.from_string(self.league)
 
     def get_boxscore(self, standardize: bool = False) -> list[pd.DataFrame]:
         """Gets traditional boxscore
@@ -81,7 +89,9 @@ class Game:
         Returns:
             list[pd.DataFrame]: list of dataframes (players, starters/bench, team)
         """
-        dfs = nba.BoxScoreTraditionalV3(self.game_id).get_data_frames()
+        dfs = nba.BoxScoreTraditionalV3(
+            self.game_id, league_id=self.league_id
+        ).get_data_frames()
 
         if standardize:
             dfs = [standardize_dataframe(df, data_type="game") for df in dfs]
@@ -99,7 +109,9 @@ class Game:
         Returns:
             pandas.DataFrame: The advanced box score data for the game.
         """
-        dfs = nba.BoxScoreAdvancedV3(self.game_id).get_data_frames()
+        dfs = nba.BoxScoreAdvancedV3(
+            self.game_id, league_id=self.league_id
+        ).get_data_frames()
 
         if standardize:
             dfs = [standardize_dataframe(df, data_type="game") for df in dfs]
@@ -117,7 +129,9 @@ class Game:
         Returns:
             def_box (pandas.DataFrame): DataFrame containing the defensive statistics.
         """
-        dfs = nba.BoxScoreDefensiveV2(self.game_id).get_data_frames()
+        dfs = nba.BoxScoreDefensiveV2(
+            self.game_id, league_id=self.league_id
+        ).get_data_frames()
 
         if standardize:
             dfs = [standardize_dataframe(df, data_type="game") for df in dfs]
@@ -135,7 +149,9 @@ class Game:
         Returns:
             pandas.DataFrame: The four factors data for the game.
         """
-        dfs = nba.BoxScoreFourFactorsV3(self.game_id).get_data_frames()
+        dfs = nba.BoxScoreFourFactorsV3(
+            self.game_id, league_id=self.league_id
+        ).get_data_frames()
 
         if standardize:
             dfs = [standardize_dataframe(df, data_type="game") for df in dfs]
@@ -152,7 +168,9 @@ class Game:
         Returns:
             list[pd.DataFrame]: list of two dataframes (players, teams)
         """
-        dfs = nba.BoxScoreHustleV2(self.game_id).get_data_frames()
+        dfs = nba.BoxScoreHustleV2(
+            self.game_id, league_id=self.league_id
+        ).get_data_frames()
 
         if standardize:
             dfs = [standardize_dataframe(df, data_type="game") for df in dfs]
@@ -170,7 +188,9 @@ class Game:
         Returns:
             pandas.DataFrame: The matchups data for the game.
         """
-        dfs = nba.BoxScoreMatchupsV3(self.game_id).get_data_frames()
+        dfs = nba.BoxScoreMatchupsV3(
+            self.game_id, league_id=self.league_id
+        ).get_data_frames()
 
         if standardize:
             dfs = [standardize_dataframe(df, data_type="game") for df in dfs]
@@ -188,7 +208,9 @@ class Game:
         Returns:
             pandas.DataFrame: The miscellaneous box score data.
         """
-        dfs = nba.BoxScoreMiscV3(self.game_id).get_data_frames()
+        dfs = nba.BoxScoreMiscV3(
+            self.game_id, league_id=self.league_id
+        ).get_data_frames()
 
         if standardize:
             dfs = [standardize_dataframe(df, data_type="game") for df in dfs]
@@ -206,7 +228,9 @@ class Game:
         Returns:
             pandas.DataFrame: The scoring data for the game.
         """
-        dfs = nba.BoxScoreScoringV3(self.game_id).get_data_frames()
+        dfs = nba.BoxScoreScoringV3(
+            self.game_id, league_id=self.league_id
+        ).get_data_frames()
 
         if standardize:
             dfs = [standardize_dataframe(df, data_type="game") for df in dfs]
@@ -223,7 +247,9 @@ class Game:
         Returns:
             list[pd.DataFrame]: list of two dataframes (players, teams)
         """
-        dfs = nba.BoxScoreUsageV3(self.game_id).get_data_frames()
+        dfs = nba.BoxScoreUsageV3(
+            self.game_id, league_id=self.league_id
+        ).get_data_frames()
 
         if standardize:
             dfs = [standardize_dataframe(df, data_type="game") for df in dfs]
@@ -241,7 +267,9 @@ class Game:
         Returns:
             playertrack (pandas.DataFrame): The player tracking data for the game.
         """
-        dfs = nba.BoxScorePlayerTrackV3(self.game_id).get_data_frames()
+        dfs = nba.BoxScorePlayerTrackV3(
+            self.game_id, league_id=self.league_id
+        ).get_data_frames()
 
         if standardize:
             dfs = [standardize_dataframe(df, data_type="game") for df in dfs]
@@ -259,7 +287,11 @@ class Game:
         Returns:
             pandas.DataFrame: The rotations data for the game.
         """
-        df = pd.concat(nba.GameRotation(game_id=self.game_id).get_data_frames())
+        df = pd.concat(
+            nba.GameRotation(
+                game_id=self.game_id, league_id=self.league_id
+            ).get_data_frames()
+        )
 
         if standardize:
             df = standardize_dataframe(df, data_type="game")
@@ -277,7 +309,9 @@ class Game:
         Returns:
             pd.DataFrame: The play-by-play data as a pandas DataFrame.
         """
-        df = nba.PlayByPlayV3(self.game_id).get_data_frames()[0]
+        df = nba.PlayByPlayV3(
+            self.game_id, league_id=self.league_id
+        ).get_data_frames()[0]
 
         if standardize:
             df = standardize_dataframe(df, data_type="game")
@@ -295,7 +329,9 @@ class Game:
         Returns:
             pd.DataFrame: The win probability data as a pandas DataFrame.
         """
-        df = nba.WinProbabilityPBP(game_id=self.game_id).get_data_frames()[0]
+        df = nba.WinProbabilityPBP(
+            game_id=self.game_id, league_id=self.league_id
+        ).get_data_frames()[0]
 
         if standardize:
             df = standardize_dataframe(df, data_type="game")
