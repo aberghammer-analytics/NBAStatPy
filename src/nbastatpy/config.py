@@ -1,3 +1,37 @@
+class LeagueID:
+    """League ID constants for NBA API endpoints."""
+
+    NBA = "00"
+    WNBA = "10"
+    G_LEAGUE = "20"
+
+    @classmethod
+    def from_string(cls, league: str) -> str:
+        """Convert league name to league ID.
+
+        Args:
+            league: League name (e.g., "NBA", "WNBA", "G_LEAGUE")
+
+        Returns:
+            League ID string (e.g., "00", "10", "20")
+
+        Raises:
+            ValueError: If league name is invalid
+        """
+        league_upper = league.upper().replace("-", "_").replace(" ", "_")
+        mapping = {
+            "NBA": cls.NBA,
+            "WNBA": cls.WNBA,
+            "G_LEAGUE": cls.G_LEAGUE,
+            "GLEAGUE": cls.G_LEAGUE,
+        }
+        if league_upper not in mapping:
+            raise ValueError(
+                f"Invalid league '{league}'. Valid options: NBA, WNBA, G_LEAGUE"
+            )
+        return mapping[league_upper]
+
+
 class ColumnTypes:
     """Standard column type mappings for common NBA data fields."""
 
@@ -440,3 +474,47 @@ class TableConfigs:
         "teamdashptpass",
         "teamplayeronoffdetails",
     }
+
+
+class LiveBoxscoreColumns:
+    """Column definitions for live boxscore data filtering."""
+
+    # Traditional stats columns for player boxscore
+    TRADITIONAL: list[str] = [
+        "personId",
+        "name",
+        "position",
+        "minutes",
+        "points",
+        "reboundsTotal",
+        "assists",
+        "steals",
+        "blocks",
+        "turnovers",
+        "fieldGoalsMade",
+        "fieldGoalsAttempted",
+        "threePointersMade",
+        "threePointersAttempted",
+        "freeThrowsMade",
+        "freeThrowsAttempted",
+    ]
+
+    # Advanced stats columns for player boxscore
+    ADVANCED: list[str] = [
+        "personId",
+        "name",
+        "position",
+        "minutes",
+        "plusMinusPoints",
+        "reboundsOffensive",
+        "reboundsDefensive",
+    ]
+
+    # Game summary fields extracted from game data
+    SUMMARY_FIELDS: list[str] = [
+        "gameId",
+        "gameStatus",
+        "gameStatusText",
+        "period",
+        "gameClock",
+    ]

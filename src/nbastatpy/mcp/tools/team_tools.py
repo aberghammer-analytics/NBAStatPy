@@ -13,14 +13,16 @@ def get_team_recent_games(
     season_type: str = "Regular Season",
     include_opponent_stats: bool = True,
     include_advanced_stats: bool = False,
-) -> list[dict]:
+) -> dict:
     """Get statistics from the last n games for a team.
 
     Returns game-by-game stats including points, rebounds, assists, shooting percentages,
     and optionally opponent stats and advanced metrics.
 
+    The team's league (NBA or WNBA) is auto-detected from the abbreviation.
+
     Args:
-        team_abbreviation: NBA team abbreviation (e.g., "MIL", "LAL", "BOS", "GSW").
+        team_abbreviation: Team abbreviation (e.g., "MIL", "LAL", "LVA" for Las Vegas Aces).
         last_n_games: Number of recent games to retrieve (1-82). Defaults to 10.
         season: Season year (e.g., "2024", "2024-25"). Defaults to current season.
         season_type: "Regular Season" or "Playoffs". Defaults to "Regular Season".
@@ -45,7 +47,13 @@ def get_team_recent_games(
         standardize=True,
     )
 
-    return cast(list[dict[Any, Any]], game_log.to_dict(orient="records"))
+    return {
+        "league": team.league,
+        "team_name": team.full_name,
+        "team_id": team.id,
+        "team_abbreviation": team.abbreviation,
+        "games": cast(list[dict[Any, Any]], game_log.to_dict(orient="records")),
+    }
 
 
 @mcp.tool()
@@ -56,8 +64,9 @@ def get_team_play_type_stats(
     season: str | None = None,
     per_mode: str = "PerGame",
     season_type: str = "Regular Season",
+    league: str = "NBA",
 ) -> list[dict]:
-    """Get NBA play type (synergy) statistics for teams.
+    """Get NBA or WNBA play type (synergy) statistics for teams.
 
     Returns play type data showing how teams perform in different situations like
     transition, isolation, pick-and-roll, spot-up shooting, post-ups, and more.
@@ -77,17 +86,18 @@ def get_team_play_type_stats(
             - "OffRebound": Offensive rebound putbacks
             - "Misc": Miscellaneous plays
             - "all": All play types (default)
-        team_name: Optional team name to filter results (e.g., "Lakers", "Bucks", "Warriors").
+        team_name: Optional team name to filter results (e.g., "Lakers", "Aces").
             Uses case-insensitive partial matching. If not provided, returns all teams.
         offensive: True for offensive stats, False for defensive. Defaults to True.
         season: Season year (e.g., "2024", "2024-25"). Defaults to current season.
         per_mode: "PerGame" or "Totals". Defaults to "PerGame".
         season_type: "Regular Season" or "Playoffs". Defaults to "Regular Season".
+        league: League to query - "NBA" or "WNBA". Defaults to "NBA".
 
     Examples:
         - Get all isolation stats: get_team_play_type_stats(play_type="Isolation")
         - Get Lakers' play type stats: get_team_play_type_stats(team_name="Lakers")
-        - Get all play types for Bucks: get_team_play_type_stats(play_type="all", team_name="Bucks")
+        - Get WNBA play type stats: get_team_play_type_stats(league="WNBA")
         - Get defensive transition stats: get_team_play_type_stats(play_type="Transition", offensive=False)
     """
     # Validate parameters
@@ -107,12 +117,15 @@ def get_team_play_type_stats(
     normalized_permode = PlayTypes.PERMODE[permode_key]
 
     # Create League instance
-    league = League(
-        season_year=season_year, playoffs=playoffs, permode=normalized_permode
+    league_obj = League(
+        season_year=season_year,
+        playoffs=playoffs,
+        permode=normalized_permode,
+        league=league,
     )
 
     # Get synergy team data with standardization
-    df = league.get_synergy_team(
+    df = league_obj.get_synergy_team(
         play_type=play_type, offensive=offensive, standardize=True
     )
 
@@ -138,8 +151,9 @@ def get_team_tracking_stats(
     season: str | None = None,
     per_mode: str = "PerGame",
     season_type: str = "Regular Season",
+    league: str = "NBA",
 ) -> list[dict]:
-    """Get NBA tracking statistics for teams.
+    """Get NBA or WNBA tracking statistics for teams.
 
     Returns team tracking data including speed/distance, possessions, drives, passing,
     catch-and-shoot, pull-up shots, post touches, paint touches, elbow touches, and more.
@@ -159,16 +173,17 @@ def get_team_tracking_stats(
             - "PaintTouch": Paint touch stats
             - "Efficiency": Overall efficiency (default)
             - "all": All tracking types
-        team_name: Optional team name to filter results (e.g., "Lakers", "Bucks", "Warriors").
+        team_name: Optional team name to filter results (e.g., "Lakers", "Aces").
             Uses case-insensitive partial matching. If not provided, returns all teams.
         season: Season year (e.g., "2024", "2024-25"). Defaults to current season.
         per_mode: "PerGame" or "Totals". Defaults to "PerGame".
         season_type: "Regular Season" or "Playoffs". Defaults to "Regular Season".
+        league: League to query - "NBA" or "WNBA". Defaults to "NBA".
 
     Examples:
         - Get all team drive stats: get_team_tracking_stats(track_type="Drives")
         - Get Lakers' tracking stats: get_team_tracking_stats(team_name="Lakers")
-        - Get speed/distance for Bucks: get_team_tracking_stats(track_type="SpeedDistance", team_name="Bucks")
+        - Get WNBA tracking stats: get_team_tracking_stats(league="WNBA")
         - Get all tracking types: get_team_tracking_stats(track_type="all")
     """
     # Validate parameters
@@ -188,12 +203,15 @@ def get_team_tracking_stats(
     normalized_permode = PlayTypes.PERMODE[permode_key]
 
     # Create League instance
-    league = League(
-        season_year=season_year, playoffs=playoffs, permode=normalized_permode
+    league_obj = League(
+        season_year=season_year,
+        playoffs=playoffs,
+        permode=normalized_permode,
+        league=league,
     )
 
     # Get tracking team data with standardization
-    df = league.get_tracking_team(track_type=track_type, standardize=True)
+    df = league_obj.get_tracking_team(track_type=track_type, standardize=True)
 
     # Filter by team name if provided (case-insensitive partial match)
     if team_name:
@@ -214,32 +232,37 @@ def get_team_tracking_stats(
 def get_team_roster(
     team_abbreviation: str,
     season: str | None = None,
-) -> list[dict]:
-    """Get the roster for an NBA team.
+) -> dict:
+    """Get the roster for an NBA or WNBA team.
 
     Returns the list of players on a team's roster for a given season,
     including player names, positions, jersey numbers, and basic info.
 
+    The team's league (NBA or WNBA) is auto-detected from the abbreviation.
+
     Args:
-        team_abbreviation: NBA team abbreviation (e.g., "MIL", "LAL", "BOS", "GSW").
+        team_abbreviation: Team abbreviation (e.g., "MIL", "LAL", "LVA" for Las Vegas Aces).
         season: Season year (e.g., "2024", "2024-25"). Defaults to current season.
 
     Returns:
-        List of roster entries, each containing:
-        - player_id: NBA player ID
-        - player: Player name
-        - num: Jersey number
-        - position: Playing position
-        - height: Player height
-        - weight: Player weight
-        - birth_date: Date of birth
-        - age: Player age
-        - exp: Years of NBA experience
-        - school: College/school attended
-        - how_acquired: How player was acquired
+        Dictionary containing:
+        - league: "NBA" or "WNBA"
+        - team_name, team_id, team_abbreviation: Team identifiers
+        - roster: List of roster entries, each containing:
+            - player_id: Player ID
+            - player: Player name
+            - num: Jersey number
+            - position: Playing position
+            - height: Player height
+            - weight: Player weight
+            - birth_date: Date of birth
+            - age: Player age
+            - exp: Years of experience
+            - school: College/school attended
 
     Examples:
         - Get Lakers roster: get_team_roster("LAL")
+        - Get Las Vegas Aces roster: get_team_roster("LVA")
         - Get 2023 Bucks roster: get_team_roster("MIL", season="2023")
     """
     # Validate parameters
@@ -252,8 +275,15 @@ def get_team_roster(
     roster_dfs = team.get_roster(standardize=True)
 
     # Roster data is in the first DataFrame
+    roster_list: list[dict[Any, Any]] = []
     if roster_dfs and len(roster_dfs) > 0:
         roster_df = roster_dfs[0]
-        return cast(list[dict[Any, Any]], roster_df.to_dict(orient="records"))
+        roster_list = cast(list[dict[Any, Any]], roster_df.to_dict(orient="records"))
 
-    return []
+    return {
+        "league": team.league,
+        "team_name": team.full_name,
+        "team_id": team.id,
+        "team_abbreviation": team.abbreviation,
+        "roster": roster_list,
+    }

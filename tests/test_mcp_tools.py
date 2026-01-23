@@ -44,6 +44,7 @@ async def test_list_tools(mcp_client: Client[FastMCPTransport]):
     assert "get_player_tracking_stats" in tool_names
     assert "get_team_play_type_stats" in tool_names
     assert "get_team_tracking_stats" in tool_names
+    assert "get_live_games" in tool_names
 
 
 # ============================================================================
@@ -504,3 +505,49 @@ async def test_get_league_team_stats(mcp_client: Client[FastMCPTransport]):
 
     assert result.is_error is False
     assert len(result.content) > 0
+
+
+async def test_get_live_games(mcp_client: Client[FastMCPTransport]):
+    """Test get_live_games tool with basic usage (uses mock data)."""
+    import json
+
+    result = await mcp_client.call_tool(name="get_live_games", arguments={})
+
+    logger.info("Live games result:")
+    logger.info(result.content[0].text[:500])
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+    # Parse result and verify it matches mock data
+    games = json.loads(result.content[0].text)
+    assert len(games) == 2  # Mock has 2 games
+
+    # Verify first game matches mock (CHI vs LAC)
+    assert games[0]["game_id"] == "0022400500"
+    assert games[0]["home_team"]["abbreviation"] == "CHI"
+    assert games[0]["away_team"]["abbreviation"] == "LAC"
+    assert games[0]["home_team"]["score"] == 84
+    assert games[0]["game_leaders"]["home"]["name"] == "Nikola Vucevic"
+
+
+async def test_get_live_games_with_team_filter(mcp_client: Client[FastMCPTransport]):
+    """Test get_live_games tool with team filter (uses mock data)."""
+    import json
+
+    result = await mcp_client.call_tool(
+        name="get_live_games", arguments={"team_abbreviation": "LAL"}
+    )
+
+    logger.info("Live games for LAL:")
+    logger.info(result.content[0].text[:500])
+
+    assert result.is_error is False
+    assert len(result.content) > 0
+
+    # Parse result and verify filter works with mock data
+    games = json.loads(result.content[0].text)
+    assert len(games) == 1  # Mock has 1 LAL game (LAL vs BOS)
+    assert games[0]["game_id"] == "0022400501"
+    assert games[0]["home_team"]["abbreviation"] == "LAL"
+    assert games[0]["away_team"]["abbreviation"] == "BOS"

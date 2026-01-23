@@ -88,7 +88,17 @@ class Validators:
     VALID_MEASURE_TYPES = {"Base", "Advanced", "Misc", "Scoring", "Usage"}
 
     # Valid NBA team abbreviations
-    VALID_TEAM_ABBREVIATIONS = {team["abbreviation"] for team in nba_teams.get_teams()}
+    VALID_NBA_TEAM_ABBREVIATIONS = {
+        team["abbreviation"] for team in nba_teams.get_teams()
+    }
+
+    # Valid WNBA team abbreviations
+    VALID_WNBA_TEAM_ABBREVIATIONS = {
+        team["abbreviation"] for team in nba_teams.get_wnba_teams()
+    }
+
+    # Combined team abbreviations (for backwards compatibility)
+    VALID_TEAM_ABBREVIATIONS = VALID_NBA_TEAM_ABBREVIATIONS
 
     @classmethod
     def validate_season_type(cls, season_type: str) -> str:
@@ -111,11 +121,15 @@ class Validators:
         return season_type
 
     @classmethod
-    def validate_team_abbreviation(cls, abbreviation: str) -> str:
+    def validate_team_abbreviation(
+        cls, abbreviation: str, league: str | None = None
+    ) -> str:
         """Validate and return the team abbreviation.
 
         Args:
             abbreviation: Team abbreviation to validate.
+            league: Optional league to validate against ("NBA" or "WNBA").
+                    If None, validates against NBA teams only (backwards compatible).
 
         Returns:
             Validated team abbreviation (uppercase).
@@ -124,12 +138,39 @@ class Validators:
             ValueError: If team abbreviation is invalid.
         """
         abbrev_upper = abbreviation.upper()
-        if abbrev_upper not in cls.VALID_TEAM_ABBREVIATIONS:
+
+        if league is not None:
+            league_upper = league.upper()
+            if league_upper == "WNBA":
+                valid_abbrevs = cls.VALID_WNBA_TEAM_ABBREVIATIONS
+            else:
+                valid_abbrevs = cls.VALID_NBA_TEAM_ABBREVIATIONS
+        else:
+            valid_abbrevs = cls.VALID_NBA_TEAM_ABBREVIATIONS
+
+        if abbrev_upper not in valid_abbrevs:
             raise ValueError(
                 f"Invalid team abbreviation '{abbreviation}'. "
-                f"Valid options: {sorted(cls.VALID_TEAM_ABBREVIATIONS)}"
+                f"Valid options: {sorted(valid_abbrevs)}"
             )
         return abbrev_upper
+
+    @classmethod
+    def detect_team_league(cls, abbreviation: str) -> str | None:
+        """Detect which league a team abbreviation belongs to.
+
+        Args:
+            abbreviation: Team abbreviation to check.
+
+        Returns:
+            "NBA" if found in NBA teams, "WNBA" if found in WNBA teams, None if not found.
+        """
+        abbrev_upper = abbreviation.upper()
+        if abbrev_upper in cls.VALID_NBA_TEAM_ABBREVIATIONS:
+            return "NBA"
+        if abbrev_upper in cls.VALID_WNBA_TEAM_ABBREVIATIONS:
+            return "WNBA"
+        return None
 
     @classmethod
     def validate_last_n_games(cls, last_n_games: int) -> int:
@@ -387,12 +428,49 @@ class GameStatsColumns:
 
 class Formatter:
     @staticmethod
-    def get_current_season_year() -> str:
+    def get_current_season_year(league: str = "NBA") -> int:
+        """Get the current season year for a league.
+
+        Args:
+            league: League name ("NBA" or "WNBA"). Defaults to "NBA".
+
+        Returns:
+            int: The current season year.
+                - NBA: Returns previous year if before October (e.g., returns 2024 in Jan 2025 for 2024-25 season)
+                - WNBA: Returns current year if during season (May-Oct), else previous year
+        """
         current_datetime = datetime.now()
-        current_season_year = current_datetime.year
-        if current_datetime.month <= 9:
-            current_season_year -= 1
-        return current_season_year
+        current_year = current_datetime.year
+
+        if league.upper() == "WNBA":
+            # WNBA season runs May-October
+            # If we're before May, return previous year
+            if current_datetime.month < 5:
+                return current_year - 1
+            return current_year
+        else:
+            # NBA season runs October-June
+            # If we're before October, we're still in the previous season
+            if current_datetime.month <= 9:
+                return current_year - 1
+            return current_year
+
+    @staticmethod
+    def format_season_for_league(season_year: int, league: str = "NBA") -> str:
+        """Format a season year based on the league.
+
+        Args:
+            season_year: The starting year of the season.
+            league: League name ("NBA" or "WNBA"). Defaults to "NBA".
+
+        Returns:
+            str: Formatted season string.
+                - NBA: "2024-25" format
+                - WNBA: "2024" format (single year)
+        """
+        if league.upper() == "WNBA":
+            return str(season_year)
+        return f"{season_year}-{str(season_year + 1)[2:]}"
 
     @staticmethod
     def normalize_season_year(season_input) -> int:

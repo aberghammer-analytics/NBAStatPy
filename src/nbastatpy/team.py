@@ -5,8 +5,9 @@ from bs4 import BeautifulSoup
 from nba_api.stats.static import teams
 from rich.progress import track
 
+from nbastatpy.config import LeagueID
 from nbastatpy.standardize import standardize_dataframe
-from nbastatpy.utils import Formatter, PlayTypes, rate_limiter
+from nbastatpy.utils import Formatter, PlayTypes, Validators, rate_limiter
 
 
 class Team:
@@ -20,8 +21,11 @@ class Team:
         """
         Initializes a Team object.
 
+        Automatically detects whether the team is in the NBA or WNBA based on
+        the team abbreviation. NBA is checked first, then WNBA.
+
         Parameters:
-        - team_abbreviation (str): The abbreviation of the NBA team.
+        - team_abbreviation (str): The abbreviation of the NBA or WNBA team.
         - season_year (str, optional): The season year. If not provided, the current season year will be used.
         - playoffs (bool, optional): Specifies whether the team's statistics are for playoffs. Default is False.
         - permode (str, optional): The mode for the team's statistics. Default is "PerGame".
@@ -32,18 +36,53 @@ class Team:
         - info (dict): The information about the team.
         - season (str): The formatted season.
         - season_type (str): The type of season (Regular Season or Playoffs).
+        - league (str): The league the team belongs to ("NBA" or "WNBA").
+        - league_id (str): The league ID for API calls ("00" or "10").
+
+        Raises:
+            ValueError: If the team abbreviation is not found in either NBA or WNBA.
+
+        Examples:
+            >>> team = Team("MIL")  # Auto-detects NBA (Milwaukee Bucks)
+            >>> team.league
+            'NBA'
+            >>> team = Team("LVA")  # Auto-detects WNBA (Las Vegas Aces)
+            >>> team.league
+            'WNBA'
         """
         self.permode = PlayTypes.PERMODE[
             permode.replace("_", "").replace("-", "").upper()
         ]
-        if season_year:
-            self.season_year = season_year
+
+        # Auto-detect league from team abbreviation
+        detected_league = Validators.detect_team_league(team_abbreviation)
+        if detected_league is None:
+            raise ValueError(
+                f"Team abbreviation '{team_abbreviation}' not found in NBA or WNBA"
+            )
+        self.league = detected_league
+
+        # Look up team info in the appropriate league
+        if self.league == "WNBA":
+            self.info = teams.find_wnba_team_by_abbreviation(team_abbreviation)
         else:
-            self.season_year = Formatter.get_current_season_year()
+            self.info = teams.find_team_by_abbreviation(team_abbreviation)
 
-        self.info = teams.find_team_by_abbreviation(team_abbreviation)
+        if not self.info:
+            raise ValueError(
+                f"Team abbreviation '{team_abbreviation}' not found in {self.league}"
+            )
 
-        self.season = Formatter.format_season(self.season_year)
+        # Set league ID for API calls
+        self.league_id = LeagueID.from_string(self.league)
+
+        if season_year:
+            self.season_year = Formatter.normalize_season_year(season_year)
+        else:
+            self.season_year = Formatter.get_current_season_year(self.league)
+
+        # Format season based on league (WNBA uses single year format)
+        self.season = Formatter.format_season_for_league(self.season_year, self.league)
         self.season_type = "Regular Season"
         if playoffs:
             self.season_type = "Playoffs"
@@ -53,12 +92,18 @@ class Team:
 
     def get_logo(self):
         """
-        Retrieves and returns the logo of the NBA team in svg format.
+        Retrieves and returns the logo of the NBA or WNBA team in svg format.
+
+        Note: WNBA team logos may not be available from the same CDN.
 
         Returns:
-            PIL.Image.Image: The logo image of the NBA team.
+            bytes: The logo content of the team.
         """
-        pic_url = f"https://cdn.nba.com/logos/nba/{self.id}/primary/L/logo.svg"
+        if self.league == "WNBA":
+            # WNBA logos use a different URL pattern
+            pic_url = f"https://cdn.wnba.com/logos/wnba/{self.id}/primary/L/logo.svg"
+        else:
+            pic_url = f"https://cdn.nba.com/logos/nba/{self.id}/primary/L/logo.svg"
         pic = requests.get(pic_url)
         self.logo = pic.content
         return self.logo
@@ -76,6 +121,7 @@ class Team:
         dfs = nba.CommonTeamRoster(
             self.id,
             season=self.season,
+            league_id_nullable=self.league_id,
         ).get_data_frames()
 
         if standardize:
@@ -96,9 +142,18 @@ class Team:
         """
         Retrieves the salary information for the team from hoopshype.com.
 
+        Note: Salary data is only available for NBA teams. WNBA salary data
+        is not currently supported.
+
         Returns:
             pandas.DataFrame: A DataFrame containing the salary information for the team.
+
+        Raises:
+            NotImplementedError: If the team is a WNBA team.
         """
+        if self.league == "WNBA":
+            raise NotImplementedError("Salary data is not available for WNBA teams")
+
         tm_name = "_".join(self.full_name.split(" ")).lower()
         year = self.season.split("-")[0]
         season_string = year + "-" + str(int(year) + 1)
@@ -131,7 +186,9 @@ class Team:
             pd.DataFrame: The year-by-year statistics for the team.
         """
         self.year_by_year = nba.TeamYearByYearStats(
-            team_id=self.id, per_mode_simple=self.permode
+            team_id=self.id,
+            per_mode_simple=self.permode,
+            league_id=self.league_id,
         ).get_data_frames()[0]
         return self.year_by_year
 
@@ -155,8 +212,9 @@ class Team:
                 season=self.season,
                 season_type_all_star=self.season_type,
                 per_mode_detailed=self.permode,
+                league_id_nullable=self.league_id,
             ).get_data_frames()
-        ).drop(columns=drop_cols)
+        ).drop(columns=drop_cols, errors="ignore")
         return self.general_splits
 
     def get_shooting_splits(self) -> pd.DataFrame:
@@ -172,6 +230,7 @@ class Team:
                 season=self.season,
                 season_type_all_star=self.season_type,
                 per_mode_detailed=self.permode,
+                league_id_nullable=self.league_id,
             ).get_data_frames()
         )
         return self.shooting_splits
@@ -183,7 +242,9 @@ class Team:
         Returns:
             pd.DataFrame: The franchise leaders data for the team.
         """
-        self.leaders = nba.FranchiseLeaders(team_id=self.id).get_data_frames()[0]
+        self.leaders = nba.FranchiseLeaders(
+            team_id=self.id, league_id_nullable=self.league_id
+        ).get_data_frames()[0]
         return self.leaders
 
     def get_franchise_players(self) -> pd.DataFrame:
@@ -194,7 +255,7 @@ class Team:
             pd.DataFrame: A DataFrame containing the franchise players' data.
         """
         self.franchise_players = nba.FranchisePlayers(
-            team_id=self.id
+            team_id=self.id, league_id=self.league_id
         ).get_data_frames()[0]
         return self.franchise_players
 
@@ -210,6 +271,7 @@ class Team:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
         self.season_lineups["season"] = self.season
         self.season_lineups["season_type"] = self.season_type
@@ -228,6 +290,7 @@ class Team:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_simple=self.permode,
+            league_id=self.league_id,
         ).get_data_frames()[0]
         self.opponent_shooting["season"] = self.season
         self.opponent_shooting["season_type"] = self.season_type
@@ -246,6 +309,7 @@ class Team:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
         self.player_clutch["season"] = self.season
         self.player_clutch["season_type"] = self.season_type
@@ -264,6 +328,7 @@ class Team:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_simple=self.permode,
+            league_id=self.league_id,
         ).get_data_frames()[0]
         self.player_shots["season"] = self.season
         self.player_shots["season_type"] = self.season_type
@@ -282,6 +347,7 @@ class Team:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
         self.player_shot_locations["season"] = self.season
         self.player_shot_locations["season_type"] = self.season_type
@@ -303,6 +369,7 @@ class Team:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         df["season"] = self.season
@@ -331,6 +398,7 @@ class Team:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_simple=self.permode,
+            league_id=self.league_id,
         ).get_data_frames()[0]
         self.player_point_defend["season"] = self.season
         self.player_point_defend["season_type"] = self.season_type
@@ -348,6 +416,7 @@ class Team:
             team_id_nullable=self.id,
             season=self.season,
             season_type_all_star=self.season_type,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
         self.player_hustle["season"] = self.season
         self.player_hustle["season_type"] = self.season_type
@@ -367,6 +436,7 @@ class Team:
             season_type_all_star=self.season_type,
             minutes_min=1,
             per_mode_detailed=self.permode,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
         self.lineup_details["season"] = self.season
         self.lineup_details["season_type"] = self.season_type
@@ -385,6 +455,7 @@ class Team:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
         self.player_on_details["season"] = self.season
         self.player_on_details["season_type"] = self.season_type
@@ -407,6 +478,7 @@ class Team:
                 season=self.season,
                 season_type_playoffs=self.season_type,
                 per_mode_simple=self.permode,
+                league_id=self.league_id,
             ).get_data_frames()[0]
         else:
             self.player_matchups = nba.LeagueSeasonMatchups(
@@ -414,6 +486,7 @@ class Team:
                 season=self.season,
                 season_type_playoffs=self.season_type,
                 per_mode_simple=self.permode,
+                league_id=self.league_id,
             ).get_data_frames()[0]
 
         self.player_matchups["season"] = self.season
@@ -434,6 +507,7 @@ class Team:
                 season=self.season,
                 season_type_all_star=self.season_type,
                 per_mode_simple=self.permode,
+                league_id=self.league_id,
             ).get_data_frames()
         )
 
@@ -457,6 +531,7 @@ class Team:
                 season=self.season,
                 season_type_all_star=self.season_type,
                 per_mode_detailed=self.permode,
+                league_id_nullable=self.league_id,
             ).get_data_frames()[1:]
         )
         return self.player_onoff.reset_index(drop=True)
@@ -486,6 +561,7 @@ class Team:
             team_id=self.id,
             season=self.season,
             season_type_all_star=self.season_type,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         # Filter to last n games if specified
@@ -526,6 +602,7 @@ class Team:
             season=self.season,
             season_type_all_star=self.season_type,
             player_or_team_abbreviation="T",
+            league_id=self.league_id,
         ).get_data_frames()[0]
 
         # Columns to include as opponent stats (exclude metadata columns)
@@ -637,9 +714,3 @@ class Team:
             df = df.merge(advanced_df, on="Game_ID", how="left")
 
         return df
-
-
-if __name__ == "__main__":
-    team_name = "MIL"
-    team = Team(team_name, season_year="2024", playoffs=True)
-    print(team.get_salary())

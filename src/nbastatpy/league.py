@@ -4,6 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 from rich.progress import track
 
+from nbastatpy.config import LeagueID
 from nbastatpy.standardize import standardize_dataframe
 from nbastatpy.utils import Formatter, LeaderStats, PlayTypes, rate_limiter
 
@@ -14,28 +15,38 @@ class League:
         season_year: int | str | None = None,
         playoffs: bool = False,
         permode: str = "PERGAME",
+        league: str = "NBA",
     ):
         """
         Initialize a League object.
 
         Args:
             season_year (int | str, optional): The year of the season. Can be provided in various formats:
-                - 4-digit year: 2022, "2022" -> 2022-23 season
-                - 2-digit year: 22, "22" -> 2022-23 season
+                - 4-digit year: 2022, "2022" -> 2022-23 season (NBA) or 2022 season (WNBA)
+                - 2-digit year: 22, "22" -> 2022-23 season (NBA) or 2022 season (WNBA)
                 - Full season string: "2022-23" -> 2022-23 season
                 Defaults to current season if None.
             playoffs (bool, optional): Indicates if the season is for playoffs. Defaults to False.
             permode (str, optional): The per mode for the season. Defaults to "PERGAME".
+            league (str, optional): The league ("NBA" or "WNBA"). Defaults to "NBA".
+
+        Examples:
+            >>> league = League(2024)                    # NBA 2024-25 season
+            >>> league = League(2024, league="WNBA")     # WNBA 2024 season
         """
         self.permode = PlayTypes.PERMODE[
             permode.replace("_", "").replace("-", "").upper()
         ]
+        self.league = league.upper()
+        self.league_id = LeagueID.from_string(self.league)
+
         if season_year is not None:
             self.season_year = Formatter.normalize_season_year(season_year)
         else:
-            self.season_year = Formatter.get_current_season_year()
+            self.season_year = Formatter.get_current_season_year(self.league)
 
-        self.season = Formatter.format_season(self.season_year)
+        # Format season based on league (WNBA uses single year format)
+        self.season = Formatter.format_season_for_league(self.season_year, self.league)
         self.season_type = "Regular Season"
         if playoffs:
             self.season_type = "Playoffs"
@@ -44,9 +55,18 @@ class League:
         """
         Retrieves the salaries of NBA players for a specific season.
 
+        Note: Salary data is only available for NBA. WNBA salary data
+        is not currently supported.
+
         Returns:
             pd.DataFrame: A DataFrame containing the salaries of NBA players for the specified season.
+
+        Raises:
+            NotImplementedError: If the league is WNBA.
         """
+        if self.league == "WNBA":
+            raise NotImplementedError("Salary data is not available for WNBA")
+
         year = self.season.split("-")[0]
         season_string = year + "-" + str(int(year) + 1)
 
@@ -84,6 +104,7 @@ class League:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         if standardize:
@@ -112,6 +133,7 @@ class League:
             season_type_all_star=self.season_type,
             minutes_min=1,
             per_mode_detailed=self.permode,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         if standardize:
@@ -139,6 +161,7 @@ class League:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_simple=self.permode,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         if standardize:
@@ -166,6 +189,7 @@ class League:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         if standardize:
@@ -193,6 +217,7 @@ class League:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_simple=self.permode,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         if standardize:
@@ -220,6 +245,7 @@ class League:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         if standardize:
@@ -247,6 +273,7 @@ class League:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         if standardize:
@@ -274,6 +301,7 @@ class League:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         if standardize:
@@ -301,6 +329,7 @@ class League:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_simple=self.permode,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         if standardize:
@@ -328,6 +357,7 @@ class League:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         if standardize:
@@ -355,6 +385,7 @@ class League:
             season=self.season,
             season_type_all_star=self.season_type,
             per_mode_detailed=self.permode,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         if standardize:
@@ -382,6 +413,7 @@ class League:
             season_nullable=self.season,
             season_type_nullable=self.season_type,
             per_mode_simple_nullable=self.permode,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         if standardize:
@@ -409,6 +441,7 @@ class League:
             season=self.season,
             season_type_all_star=self.season_type,
             player_or_team_abbreviation="T",
+            league_id=self.league_id,
         ).get_data_frames()[0]
 
         if standardize:
@@ -435,6 +468,7 @@ class League:
         df = nba.LeagueHustleStatsPlayer(
             season=self.season,
             season_type_all_star=self.season_type,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         if standardize:
@@ -461,6 +495,7 @@ class League:
         df = nba.LeagueHustleStatsTeam(
             season=self.season,
             season_type_all_star=self.season_type,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         if standardize:
@@ -488,6 +523,7 @@ class League:
             season=self.season,
             season_type_playoffs=self.season_type,
             per_mode_simple=self.permode,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         if standardize:
@@ -514,6 +550,7 @@ class League:
         df = nba.PlayerEstimatedMetrics(
             season=self.season,
             season_type=self.season_type,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         if standardize:
@@ -562,6 +599,7 @@ class League:
                 type_grouping_nullable=self.off_def,
                 player_or_team_abbreviation="P",
                 season_type_all_star=self.season_type,
+                league_id_nullable=self.league_id,
             ).get_data_frames()[0]
 
         else:
@@ -574,6 +612,7 @@ class League:
                     type_grouping_nullable=self.off_def,
                     player_or_team_abbreviation="P",
                     season_type_all_star=self.season_type,
+                    league_id_nullable=self.league_id,
                 ).get_data_frames()[0]
                 df_list.append(temp_df)
                 rate_limiter.wait()
@@ -629,6 +668,7 @@ class League:
                 type_grouping_nullable=self.off_def,
                 player_or_team_abbreviation="T",
                 season_type_all_star=self.season_type,
+                league_id_nullable=self.league_id,
             ).get_data_frames()[0]
 
         else:
@@ -641,6 +681,7 @@ class League:
                     type_grouping_nullable=self.off_def,
                     player_or_team_abbreviation="T",
                     season_type_all_star=self.season_type,
+                    league_id_nullable=self.league_id,
                 ).get_data_frames()[0]
                 df_list.append(temp_df)
                 rate_limiter.wait()
@@ -686,6 +727,7 @@ class League:
                 pt_measure_type=self.play_type,
                 player_or_team="Player",
                 season_type_all_star=self.season_type,
+                league_id_nullable=self.league_id,
             ).get_data_frames()[0]
 
         else:
@@ -697,6 +739,7 @@ class League:
                     pt_measure_type=play,
                     player_or_team="Player",
                     season_type_all_star=self.season_type,
+                    league_id_nullable=self.league_id,
                 ).get_data_frames()[0]
                 df_list.append(temp_df)
                 rate_limiter.wait()
@@ -740,6 +783,7 @@ class League:
                 pt_measure_type=self.play_type,
                 player_or_team="Team",
                 season_type_all_star=self.season_type,
+                league_id_nullable=self.league_id,
             ).get_data_frames()[0]
 
         else:
@@ -751,6 +795,7 @@ class League:
                     pt_measure_type=play,
                     player_or_team="Team",
                     season_type_all_star=self.season_type,
+                    league_id_nullable=self.league_id,
                 ).get_data_frames()[0]
                 df_list.append(temp_df)
                 rate_limiter.wait()
@@ -791,6 +836,7 @@ class League:
                 per_mode_simple=self.permode,
                 defense_category=self.play_type,
                 season_type_all_star=self.season_type,
+                league_id_nullable=self.league_id,
             ).get_data_frames()[0]
 
         else:
@@ -801,6 +847,7 @@ class League:
                     per_mode_simple=self.permode,
                     defense_category=play,
                     season_type_all_star=self.season_type,
+                    league_id_nullable=self.league_id,
                 ).get_data_frames()[0]
                 df_list.append(temp_df)
                 rate_limiter.wait()
@@ -832,6 +879,7 @@ class League:
                 per_mode_simple=self.permode,
                 defense_category=self.play_type,
                 season_type_all_star=self.season_type,
+                league_id_nullable=self.league_id,
             ).get_data_frames()[0]
 
         else:
@@ -842,6 +890,7 @@ class League:
                     per_mode_simple=self.permode,
                     defense_category=play,
                     season_type_all_star=self.season_type,
+                    league_id_nullable=self.league_id,
                 ).get_data_frames()[0]
                 df_list.append(temp_df)
                 rate_limiter.wait()
@@ -879,6 +928,7 @@ class League:
             season=self.season,
             per_mode_detailed=self.permode,
             season_type_all_star=self.season_type,
+            league_id_nullable=self.league_id,
         ).get_data_frames()[0]
 
         # Sort by the requested stat category and get top N
@@ -901,9 +951,3 @@ class League:
 
         self.league_leaders = df
         return self.league_leaders
-
-
-if __name__ == "__main__":
-    seas = League(season_year="2004")
-    print(seas.permode)
-    print(seas.get_salaries())
