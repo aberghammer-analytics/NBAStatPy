@@ -86,7 +86,6 @@ async def test_all_tools_registered(mcp_client: Client[FastMCPTransport]):
     tool_names = [tool.name for tool in tools]
     expected_tools = [
         # Player tools
-        "get_player_salary",
         "get_player_game_logs",
         "get_player_career_stats",
         "get_player_play_type_stats",
@@ -124,12 +123,12 @@ async def test_tool_registration_count_by_module(mcp_client: Client[FastMCPTrans
     tools = await mcp_client.list_tools()
     tool_names = [tool.name for tool in tools]
 
-    # player_tools should contribute 8 tools (includes get_recent_games_player_stats, get_player_info, get_league_player_stats)
-    # get_player_salary, get_player_game_logs, get_player_career_stats,
+    # player_tools should contribute 7 tools (includes get_recent_games_player_stats, get_player_info, get_league_player_stats)
+    # get_player_game_logs, get_player_career_stats,
     # get_player_play_type_stats, get_player_tracking_stats, get_player_info,
     # get_recent_games_player_stats, get_league_player_stats
     player_tools = [name for name in tool_names if "player" in name]
-    assert len(player_tools) == 8
+    assert len(player_tools) == 7
 
     # league_tools should contribute 3 tools (get_league_leaders, get_league_player_stats, get_league_team_stats)
     # Note: get_league_player_stats also counted in player_tools due to "player" in name
@@ -207,31 +206,6 @@ async def test_all_tools_have_input_schemas(mcp_client: Client[FastMCPTransport]
         assert "properties" in tool.inputSchema or "type" in tool.inputSchema
 
     logger.info("All tools have valid input schemas")
-
-
-async def test_get_player_salary_schema(mcp_client: Client[FastMCPTransport]):
-    """Test the schema for get_player_salary tool."""
-    tools = await mcp_client.list_tools()
-    salary_tool = next(tool for tool in tools if tool.name == "get_player_salary")
-
-    schema = salary_tool.inputSchema
-    properties = schema.get("properties", {})
-
-    # player_name should be required
-    assert "player_name" in properties
-    assert properties["player_name"]["type"] == "string"
-
-    # season should be optional
-    assert "season" in properties
-    # Check if it allows null or is in required list
-    required = schema.get("required", [])
-    assert "player_name" in required
-    assert "season" not in required or properties["season"].get("type") in [
-        "string",
-        ["string", "null"],
-    ]
-
-    logger.info("get_player_salary schema validated")
 
 
 async def test_get_player_game_logs_schema(mcp_client: Client[FastMCPTransport]):
@@ -360,9 +334,6 @@ async def test_concurrent_tool_calls(mcp_client: Client[FastMCPTransport]):
             name="get_league_leaders", arguments={"stat_category": "PTS", "limit": 5}
         ),
         mcp_client.call_tool(
-            name="get_player_salary", arguments={"player_name": "LeBron James"}
-        ),
-        mcp_client.call_tool(
             name="get_league_leaders", arguments={"stat_category": "REB", "limit": 5}
         ),
     ]
@@ -370,7 +341,7 @@ async def test_concurrent_tool_calls(mcp_client: Client[FastMCPTransport]):
     results = await asyncio.gather(*calls)
 
     # All calls should succeed
-    assert len(results) == 3
+    assert len(results) == 2
     assert all(not result.is_error for result in results)
 
     logger.info("Concurrent tool calls completed successfully")
@@ -385,15 +356,10 @@ async def test_sequential_tool_calls(mcp_client: Client[FastMCPTransport]):
     assert not result1.is_error
 
     result2 = await mcp_client.call_tool(
-        name="get_player_salary", arguments={"player_name": "LeBron James"}
-    )
-    assert not result2.is_error
-
-    result3 = await mcp_client.call_tool(
         name="get_team_recent_games",
         arguments={"team_abbreviation": "MIL", "last_n_games": 3},
     )
-    assert not result3.is_error
+    assert not result2.is_error
 
     logger.info("Sequential tool calls completed successfully")
 

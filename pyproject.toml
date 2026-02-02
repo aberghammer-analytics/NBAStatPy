@@ -5,7 +5,6 @@ description = "An easy-to-use wrapper for nba_api to easily find data for a play
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "bs4>=0.0.2",
     "fastmcp>=2,<3",
     "loguru>=0.7.3",
     "nba-api>=1.6.1",
@@ -56,6 +55,9 @@ addopts = [
     "--strict-markers",
     "--strict-config",
     "-ra",
+]
+markers = [
+    "e2e: end-to-end tests that make real API calls (deselect with '-m \"not e2e\"')",
 ]
 
 [tool.coverage.run]
