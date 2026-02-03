@@ -28,6 +28,33 @@ stats = player.get_career_stats()
 - **League** - Query league-wide stats, lineups, and tracking data
 - **Team** - Retrieve team rosters, stats, and splits
 
+### WNBA Support
+
+NBAStatPy supports WNBA data out of the box. Player and Team classes automatically detect whether a player or team belongs to the NBA or WNBA:
+
+```python
+from nbastatpy.player import Player
+from nbastatpy.team import Team
+
+# WNBA players are auto-detected
+player = Player("A'ja Wilson")
+print(player.league)  # "WNBA"
+stats = player.get_career_stats()
+
+# WNBA teams are auto-detected by abbreviation
+team = Team("LVA")  # Las Vegas Aces
+print(team.league)  # "WNBA"
+roster = team.get_roster()
+```
+
+For league-wide WNBA data, pass the `league` parameter:
+
+```python
+from nbastatpy.league import League
+
+wnba_season = League(2024, league="WNBA")
+leaders = wnba_season.get_league_leaders(stat_category="PTS")
+```
 
 ### Standalone Usage
 
@@ -90,17 +117,23 @@ The MCP server provides tools for accessing NBA data:
 
 | Tool | Description |
 |------|-------------|
-| `get_player_salary` | Get player salary data by name |
 | `get_player_game_logs` | Get recent game logs for a player |
 | `get_player_career_stats` | Get season-by-season career statistics |
 | `get_player_play_type_stats` | Get play type (synergy) stats for a player |
 | `get_player_tracking_stats` | Get tracking stats (drives, touches, etc.) |
+| `get_player_info` | Get player biographical and career info |
 | `get_league_leaders` | Get league leaders for any stat category |
+| `get_league_player_stats` | Get league-wide player statistics |
+| `get_league_team_stats` | Get league-wide team statistics |
 | `get_team_recent_games` | Get recent games for a team |
 | `get_team_play_type_stats` | Get play type stats for a team |
 | `get_team_tracking_stats` | Get tracking stats for a team |
+| `get_team_roster` | Get current team roster |
 | `get_recent_games_summary` | Get summary of recent NBA games |
 | `get_recent_games_player_stats` | Get player stats from recent games |
+| `get_live_games` | Get currently live game data |
+| `get_game_boxscore` | Get box score for a specific game |
+| `get_game_playbyplay` | Get play-by-play data for a game |
 
 ## Installation
 

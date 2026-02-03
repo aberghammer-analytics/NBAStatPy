@@ -279,6 +279,8 @@ class ColumnTypes:
         "nickname",
         "rosterstatus",
         "how_acquired",
+        # Season identifiers
+        "season_id",
     }
 
 

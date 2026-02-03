@@ -379,7 +379,7 @@ class Player:
             measure_type_player_game_logs_nullable=normalized_measure,
             per_mode_simple_nullable=actual_permode,
             last_n_games_nullable=last_n_games,
-            league_id_nullable=self.league_id,
+            league_id=self.league_id,
         ).get_data_frames()[0]
 
         if standardize:
