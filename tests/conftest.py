@@ -675,6 +675,51 @@ def mock_boxscore_traditional_v3(request, mocker):
 
 
 @pytest.fixture(autouse=True)
+def mock_rate_limiter(request, mocker):
+    """Mock rate limiter to prevent sleep delays during unit/integration tests."""
+    if _is_e2e(request):
+        return
+    mocker.patch("nbastatpy.utils.rate_limiter.wait", return_value=None)
+
+
+@pytest.fixture(autouse=True)
+def mock_boxscore_four_factors_v3(request, mocker):
+    """Mock BoxScoreFourFactorsV3 API call for four factors stats."""
+    if _is_e2e(request):
+        return
+    mock_player_df = pd.DataFrame(
+        {
+            "gameId": ["0022301148"] * 2,
+            "teamId": [1610612747, 1610612738],
+            "personId": [2544, 1628369],
+            "firstName": ["LeBron", "Jayson"],
+            "familyName": ["James", "Tatum"],
+            "effectiveFieldGoalPercentage": [0.61, 0.55],
+            "freeThrowAttemptRate": [0.25, 0.22],
+            "teamTurnoverPercentage": [0.12, 0.14],
+            "offensiveReboundPercentage": [0.22, 0.18],
+        }
+    )
+    mock_team_df = pd.DataFrame(
+        {
+            "gameId": ["0022301148", "0022301148"],
+            "teamId": [1610612747, 1610612738],
+            "teamName": ["Lakers", "Celtics"],
+            "effectiveFieldGoalPercentage": [0.54, 0.50],
+            "freeThrowAttemptRate": [0.25, 0.22],
+            "teamTurnoverPercentage": [0.12, 0.14],
+            "offensiveReboundPercentage": [0.22, 0.18],
+        }
+    )
+    mock_response = MagicMock()
+    mock_response.get_data_frames.return_value = [mock_player_df, mock_team_df]
+    mocker.patch(
+        "nba_api.stats.endpoints.BoxScoreFourFactorsV3", return_value=mock_response
+    )
+    return mock_player_df
+
+
+@pytest.fixture(autouse=True)
 def mock_boxscore_advanced_v3(request, mocker):
     """Mock BoxScoreAdvancedV3 API call for advanced boxscore."""
     if _is_e2e(request):
@@ -706,7 +751,9 @@ def mock_boxscore_advanced_v3(request, mocker):
             "offensiveRating": [115.0, 108.5],
             "defensiveRating": [108.5, 115.0],
             "netRating": [6.5, -6.5],
+            "pace": [100.5, 99.2],
             "trueShootingPercentage": [0.58, 0.54],
+            "effectiveFieldGoalPercentage": [0.54, 0.50],
             "PIE": [0.55, 0.45],
         }
     )
