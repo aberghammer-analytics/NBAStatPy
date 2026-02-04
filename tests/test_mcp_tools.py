@@ -33,7 +33,6 @@ async def test_list_tools(mcp_client: Client[FastMCPTransport]):
     assert len(tools) >= 1
 
     tool_names = [tool.name for tool in tools]
-    assert "get_player_salary" in tool_names
     assert "get_player_game_logs" in tool_names
     assert "get_league_leaders" in tool_names
     assert "get_team_recent_games" in tool_names
@@ -50,23 +49,6 @@ async def test_list_tools(mcp_client: Client[FastMCPTransport]):
 # ============================================================================
 # Basic Happy Path Tests (one per tool)
 # ============================================================================
-
-
-async def test_get_player_salary(mcp_client: Client[FastMCPTransport]):
-    """Test get_player_salary tool with basic usage."""
-    result = await mcp_client.call_tool(
-        name="get_player_salary", arguments={"player_name": "LeBron James"}
-    )
-
-    logger.info("Tool call result:")
-    logger.info(result.content[0].text)
-
-    assert result.is_error is False
-    assert len(result.content) > 0
-
-    data_text = result.content[0].text
-    assert "season" in data_text.lower() or "2" in data_text
-    assert any(keyword in data_text.lower() for keyword in ["salary", "$", "million"])
 
 
 async def test_get_league_leaders(mcp_client: Client[FastMCPTransport]):

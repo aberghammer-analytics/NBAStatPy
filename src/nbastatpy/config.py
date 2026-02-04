@@ -1,3 +1,6 @@
+REQUEST_TIMEOUT = (5, 30)  # (connect_timeout, read_timeout) in seconds
+
+
 class LeagueID:
     """League ID constants for NBA API endpoints."""
 
@@ -276,6 +279,8 @@ class ColumnTypes:
         "nickname",
         "rosterstatus",
         "how_acquired",
+        # Season identifiers
+        "season_id",
     }
 
 

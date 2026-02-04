@@ -1,11 +1,10 @@
 import nba_api.stats.endpoints as nba
 import pandas as pd
 import requests
-from bs4 import BeautifulSoup
 from nba_api.stats.static import teams
 from rich.progress import track
 
-from nbastatpy.config import LeagueID
+from nbastatpy.config import REQUEST_TIMEOUT, LeagueID
 from nbastatpy.standardize import standardize_dataframe
 from nbastatpy.utils import Formatter, PlayTypes, Validators, rate_limiter
 
@@ -104,7 +103,7 @@ class Team:
             pic_url = f"https://cdn.wnba.com/logos/wnba/{self.id}/primary/L/logo.svg"
         else:
             pic_url = f"https://cdn.nba.com/logos/nba/{self.id}/primary/L/logo.svg"
-        pic = requests.get(pic_url)
+        pic = requests.get(pic_url, timeout=REQUEST_TIMEOUT)
         self.logo = pic.content
         return self.logo
 
@@ -137,46 +136,6 @@ class Team:
 
         self.roster = dfs
         return self.roster
-
-    def get_salary(self) -> pd.DataFrame:
-        """
-        Retrieves the salary information for the team from hoopshype.com.
-
-        Note: Salary data is only available for NBA teams. WNBA salary data
-        is not currently supported.
-
-        Returns:
-            pandas.DataFrame: A DataFrame containing the salary information for the team.
-
-        Raises:
-            NotImplementedError: If the team is a WNBA team.
-        """
-        if self.league == "WNBA":
-            raise NotImplementedError("Salary data is not available for WNBA teams")
-
-        tm_name = "_".join(self.full_name.split(" ")).lower()
-        year = self.season.split("-")[0]
-        season_string = year + "-" + str(int(year) + 1)
-        self.salary_url = f"https://hoopshype.com/salaries/{tm_name}/{season_string}/"
-
-        result = requests.get(self.salary_url)
-        soup = BeautifulSoup(result.content, features="html.parser")
-        tables = soup.find_all("table")
-
-        rows = [
-            [cell.text.strip() for cell in row.find_all("td")]
-            for row in tables[0].find_all("tr")
-        ]
-
-        if not rows[0]:
-            rows.pop(0)
-            if not rows:
-                raise (ValueError(f"Season data unavailable for: {season_string}"))
-        self.salary_df = pd.DataFrame(rows[1:], columns=rows[0])
-        self.salary_df["Season"] = self.salary_df.columns[1].replace("/", "_")
-        self.salary_df.columns = ["Player", "Salary", "Adjusted Salary", "Season"]
-
-        return self.salary_df
 
     def get_year_by_year(self) -> pd.DataFrame:
         """

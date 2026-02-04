@@ -1,7 +1,5 @@
 import nba_api.stats.endpoints as nba
 import pandas as pd
-import requests
-from bs4 import BeautifulSoup
 from rich.progress import track
 
 from nbastatpy.config import LeagueID
@@ -50,45 +48,6 @@ class League:
         self.season_type = "Regular Season"
         if playoffs:
             self.season_type = "Playoffs"
-
-    def get_salaries(self) -> pd.DataFrame:
-        """
-        Retrieves the salaries of NBA players for a specific season.
-
-        Note: Salary data is only available for NBA. WNBA salary data
-        is not currently supported.
-
-        Returns:
-            pd.DataFrame: A DataFrame containing the salaries of NBA players for the specified season.
-
-        Raises:
-            NotImplementedError: If the league is WNBA.
-        """
-        if self.league == "WNBA":
-            raise NotImplementedError("Salary data is not available for WNBA")
-
-        year = self.season.split("-")[0]
-        season_string = year + "-" + str(int(year) + 1)
-
-        url = f"https://hoopshype.com/salaries/players/{season_string}/"
-        result = requests.get(url)
-        soup = BeautifulSoup(result.content, features="html.parser")
-        tables = soup.find_all("table")[0]
-
-        # # Get the table rows
-        rows = [
-            [cell.text.strip() for cell in row.find_all("td")]
-            for row in tables.find_all("tr")
-        ]
-
-        self.salary_df = pd.DataFrame(rows[1:], columns=rows[0])
-        if "" in self.salary_df.columns:
-            self.salary_df = self.salary_df.drop(columns=[""])
-
-        self.salary_df["Season"] = self.salary_df.columns[1].replace("/", "_")
-        self.salary_df.columns = ["Player", "Salary", "Adj_Salary", "Season"]
-
-        return self.salary_df
 
     def get_lineups(self, standardize: bool = False):
         """
@@ -599,7 +558,7 @@ class League:
                 type_grouping_nullable=self.off_def,
                 player_or_team_abbreviation="P",
                 season_type_all_star=self.season_type,
-                league_id_nullable=self.league_id,
+                league_id=self.league_id,
             ).get_data_frames()[0]
 
         else:
@@ -612,7 +571,7 @@ class League:
                     type_grouping_nullable=self.off_def,
                     player_or_team_abbreviation="P",
                     season_type_all_star=self.season_type,
-                    league_id_nullable=self.league_id,
+                    league_id=self.league_id,
                 ).get_data_frames()[0]
                 df_list.append(temp_df)
                 rate_limiter.wait()
@@ -668,7 +627,7 @@ class League:
                 type_grouping_nullable=self.off_def,
                 player_or_team_abbreviation="T",
                 season_type_all_star=self.season_type,
-                league_id_nullable=self.league_id,
+                league_id=self.league_id,
             ).get_data_frames()[0]
 
         else:
@@ -681,7 +640,7 @@ class League:
                     type_grouping_nullable=self.off_def,
                     player_or_team_abbreviation="T",
                     season_type_all_star=self.season_type,
-                    league_id_nullable=self.league_id,
+                    league_id=self.league_id,
                 ).get_data_frames()[0]
                 df_list.append(temp_df)
                 rate_limiter.wait()
@@ -727,7 +686,7 @@ class League:
                 pt_measure_type=self.play_type,
                 player_or_team="Player",
                 season_type_all_star=self.season_type,
-                league_id_nullable=self.league_id,
+                league_id=self.league_id,
             ).get_data_frames()[0]
 
         else:
@@ -739,7 +698,7 @@ class League:
                     pt_measure_type=play,
                     player_or_team="Player",
                     season_type_all_star=self.season_type,
-                    league_id_nullable=self.league_id,
+                    league_id=self.league_id,
                 ).get_data_frames()[0]
                 df_list.append(temp_df)
                 rate_limiter.wait()
@@ -783,7 +742,7 @@ class League:
                 pt_measure_type=self.play_type,
                 player_or_team="Team",
                 season_type_all_star=self.season_type,
-                league_id_nullable=self.league_id,
+                league_id=self.league_id,
             ).get_data_frames()[0]
 
         else:
@@ -795,7 +754,7 @@ class League:
                     pt_measure_type=play,
                     player_or_team="Team",
                     season_type_all_star=self.season_type,
-                    league_id_nullable=self.league_id,
+                    league_id=self.league_id,
                 ).get_data_frames()[0]
                 df_list.append(temp_df)
                 rate_limiter.wait()
@@ -836,7 +795,7 @@ class League:
                 per_mode_simple=self.permode,
                 defense_category=self.play_type,
                 season_type_all_star=self.season_type,
-                league_id_nullable=self.league_id,
+                league_id=self.league_id,
             ).get_data_frames()[0]
 
         else:
@@ -847,7 +806,7 @@ class League:
                     per_mode_simple=self.permode,
                     defense_category=play,
                     season_type_all_star=self.season_type,
-                    league_id_nullable=self.league_id,
+                    league_id=self.league_id,
                 ).get_data_frames()[0]
                 df_list.append(temp_df)
                 rate_limiter.wait()
@@ -879,7 +838,7 @@ class League:
                 per_mode_simple=self.permode,
                 defense_category=self.play_type,
                 season_type_all_star=self.season_type,
-                league_id_nullable=self.league_id,
+                league_id=self.league_id,
             ).get_data_frames()[0]
 
         else:
@@ -890,7 +849,7 @@ class League:
                     per_mode_simple=self.permode,
                     defense_category=play,
                     season_type_all_star=self.season_type,
-                    league_id_nullable=self.league_id,
+                    league_id=self.league_id,
                 ).get_data_frames()[0]
                 df_list.append(temp_df)
                 rate_limiter.wait()

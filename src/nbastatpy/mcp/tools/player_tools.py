@@ -6,32 +6,6 @@ from nbastatpy.utils import Formatter, PlayTypes, Validators
 
 
 @mcp.tool()
-def get_player_salary(player_name: str, season: str | None = None) -> dict:
-    """Get player salary history and projections.
-
-    Note: Salary data is only available for NBA players. WNBA salary data is not supported.
-
-    Args:
-        player_name: Player name (e.g., "LeBron James", "Giannis")
-        season: Filter to specific season (e.g., "2024", "2023-24", "20232024"). Returns all seasons if not provided.
-    """
-    season = Formatter.format_season(season) if season else None
-
-    player = Player(player_name)
-    salary = player.get_salary(standardize=True)
-
-    if season:
-        salary = salary[salary["season"] == season]
-
-    return {
-        "league": player.league,
-        "player_name": player.name,
-        "player_id": player.id,
-        "salaries": cast(list[dict[Any, Any]], salary.to_dict(orient="records")),
-    }
-
-
-@mcp.tool()
 def get_player_game_logs(
     player_name: str,
     last_n_games: int = 10,

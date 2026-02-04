@@ -1,6 +1,7 @@
 """Shared pytest fixtures for NBAStatPy tests.
 
 Contains mock fixtures for NBA API calls used across multiple test files.
+Autouse mocks are automatically skipped for tests marked with @pytest.mark.e2e.
 """
 
 from datetime import datetime, timedelta
@@ -10,44 +11,21 @@ import pandas as pd
 import pytest
 
 
+def _is_e2e(request):
+    """Check if the current test is marked as an e2e test."""
+    return request.node.get_closest_marker("e2e") is not None
+
+
 # ============================================================================
 # Mock Data Fixtures - Used by MCP tools and server tests
 # ============================================================================
 
 
 @pytest.fixture(autouse=True)
-def mock_requests_get(mocker):
-    """Mock requests.get for salary web scraping."""
-    # Create mock HTML response for salary data
-    # The header row uses <th> tags, so find_all("td") returns empty for header row
-    # This matches the real hoopshype.com structure
-    mock_html = """
-    <html>
-    <body>
-    <table></table>
-    <table></table>
-    <table>
-        <tr><th>Season</th><th>Team</th><th>Salary</th></tr>
-        <tr><td>2024-25</td><td>LAL</td><td>$47,607,350</td></tr>
-        <tr><td>2025-26</td><td>LAL</td><td>$50,434,788</td></tr>
-    </table>
-    <table>
-        <tr><th>Season</th><th>Team</th><th>Salary</th></tr>
-        <tr><td>2023-24</td><td>LAL</td><td>$47,000,000</td></tr>
-        <tr><td>2022-23</td><td>LAL</td><td>$44,474,988</td></tr>
-    </table>
-    </body>
-    </html>
-    """
-    mock_response = MagicMock()
-    mock_response.content = mock_html.encode()
-    mocker.patch("requests.get", return_value=mock_response)
-    return mock_response
-
-
-@pytest.fixture(autouse=True)
-def mock_player_game_logs(mocker):
+def mock_player_game_logs(request, mocker):
     """Mock PlayerGameLogs API call."""
+    if _is_e2e(request):
+        return
     # Create realistic game log data
     today = datetime.now()
     dates = [(today - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(10)]
@@ -102,8 +80,10 @@ def mock_player_game_logs(mocker):
 
 
 @pytest.fixture(autouse=True)
-def mock_league_dash_player_stats(mocker):
+def mock_league_dash_player_stats(request, mocker):
     """Mock LeagueDashPlayerStats API call for league leaders."""
+    if _is_e2e(request):
+        return
     mock_df = pd.DataFrame(
         {
             "PLAYER_ID": [201566, 203507, 2544, 201142, 203954],
@@ -187,8 +167,10 @@ def mock_league_dash_player_stats(mocker):
 
 
 @pytest.fixture(autouse=True)
-def mock_team_game_log(mocker):
+def mock_team_game_log(request, mocker):
     """Mock TeamGameLog API call."""
+    if _is_e2e(request):
+        return
     today = datetime.now()
     dates = [(today - timedelta(days=i * 2)).strftime("%Y-%m-%d") for i in range(10)]
 
@@ -238,8 +220,10 @@ def mock_team_game_log(mocker):
 
 
 @pytest.fixture(autouse=True)
-def mock_league_game_log(mocker):
+def mock_league_game_log(request, mocker):
     """Mock LeagueGameLog API call for get_recent_games_summary."""
+    if _is_e2e(request):
+        return
     today = datetime.now()
     dates = [(today - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(5)]
 
@@ -357,8 +341,10 @@ def mock_league_game_log(mocker):
 
 
 @pytest.fixture(autouse=True)
-def mock_player_dashboard_by_year(mocker):
+def mock_player_dashboard_by_year(request, mocker):
     """Mock PlayerDashboardByYearOverYear API call for career stats."""
+    if _is_e2e(request):
+        return
     # First df is overall, second is by year
     mock_overall_df = pd.DataFrame(
         {
@@ -445,8 +431,10 @@ def mock_player_dashboard_by_year(mocker):
 
 
 @pytest.fixture(autouse=True)
-def mock_synergy_play_types(mocker):
+def mock_synergy_play_types(request, mocker):
     """Mock SynergyPlayTypes API call for play type stats."""
+    if _is_e2e(request):
+        return
     mock_df = pd.DataFrame(
         {
             "PLAYER_ID": [201566, 203507, 2544],
@@ -481,8 +469,10 @@ def mock_synergy_play_types(mocker):
 
 
 @pytest.fixture(autouse=True)
-def mock_league_dash_pt_stats(mocker):
+def mock_league_dash_pt_stats(request, mocker):
     """Mock LeagueDashPtStats API call for tracking stats."""
+    if _is_e2e(request):
+        return
     mock_df = pd.DataFrame(
         {
             "PLAYER_ID": [201566, 203507, 2544],
@@ -513,8 +503,10 @@ def mock_league_dash_pt_stats(mocker):
 
 
 @pytest.fixture(autouse=True)
-def mock_common_player_info(mocker):
+def mock_common_player_info(request, mocker):
     """Mock CommonPlayerInfo API call for player info."""
+    if _is_e2e(request):
+        return
     mock_df = pd.DataFrame(
         {
             "PERSON_ID": [2544],
@@ -559,8 +551,10 @@ def mock_common_player_info(mocker):
 
 
 @pytest.fixture(autouse=True)
-def mock_common_team_roster(mocker):
+def mock_common_team_roster(request, mocker):
     """Mock CommonTeamRoster API call for team roster."""
+    if _is_e2e(request):
+        return
     mock_df = pd.DataFrame(
         {
             "TeamID": [1610612747] * 3,
@@ -605,8 +599,10 @@ def mock_common_team_roster(mocker):
 
 
 @pytest.fixture(autouse=True)
-def mock_boxscore_traditional_v3(mocker):
+def mock_boxscore_traditional_v3(request, mocker):
     """Mock BoxScoreTraditionalV3 API call for game boxscore."""
+    if _is_e2e(request):
+        return
     mock_player_df = pd.DataFrame(
         {
             "gameId": ["0022301148"] * 4,
@@ -679,8 +675,55 @@ def mock_boxscore_traditional_v3(mocker):
 
 
 @pytest.fixture(autouse=True)
-def mock_boxscore_advanced_v3(mocker):
+def mock_rate_limiter(request, mocker):
+    """Mock rate limiter to prevent sleep delays during unit/integration tests."""
+    if _is_e2e(request):
+        return
+    mocker.patch("nbastatpy.utils.rate_limiter.wait", return_value=None)
+
+
+@pytest.fixture(autouse=True)
+def mock_boxscore_four_factors_v3(request, mocker):
+    """Mock BoxScoreFourFactorsV3 API call for four factors stats."""
+    if _is_e2e(request):
+        return
+    mock_player_df = pd.DataFrame(
+        {
+            "gameId": ["0022301148"] * 2,
+            "teamId": [1610612747, 1610612738],
+            "personId": [2544, 1628369],
+            "firstName": ["LeBron", "Jayson"],
+            "familyName": ["James", "Tatum"],
+            "effectiveFieldGoalPercentage": [0.61, 0.55],
+            "freeThrowAttemptRate": [0.25, 0.22],
+            "teamTurnoverPercentage": [0.12, 0.14],
+            "offensiveReboundPercentage": [0.22, 0.18],
+        }
+    )
+    mock_team_df = pd.DataFrame(
+        {
+            "gameId": ["0022301148", "0022301148"],
+            "teamId": [1610612747, 1610612738],
+            "teamName": ["Lakers", "Celtics"],
+            "effectiveFieldGoalPercentage": [0.54, 0.50],
+            "freeThrowAttemptRate": [0.25, 0.22],
+            "teamTurnoverPercentage": [0.12, 0.14],
+            "offensiveReboundPercentage": [0.22, 0.18],
+        }
+    )
+    mock_response = MagicMock()
+    mock_response.get_data_frames.return_value = [mock_player_df, mock_team_df]
+    mocker.patch(
+        "nba_api.stats.endpoints.BoxScoreFourFactorsV3", return_value=mock_response
+    )
+    return mock_player_df
+
+
+@pytest.fixture(autouse=True)
+def mock_boxscore_advanced_v3(request, mocker):
     """Mock BoxScoreAdvancedV3 API call for advanced boxscore."""
+    if _is_e2e(request):
+        return
     mock_player_df = pd.DataFrame(
         {
             "gameId": ["0022301148"] * 2,
@@ -708,7 +751,9 @@ def mock_boxscore_advanced_v3(mocker):
             "offensiveRating": [115.0, 108.5],
             "defensiveRating": [108.5, 115.0],
             "netRating": [6.5, -6.5],
+            "pace": [100.5, 99.2],
             "trueShootingPercentage": [0.58, 0.54],
+            "effectiveFieldGoalPercentage": [0.54, 0.50],
             "PIE": [0.55, 0.45],
         }
     )
@@ -721,8 +766,10 @@ def mock_boxscore_advanced_v3(mocker):
 
 
 @pytest.fixture(autouse=True)
-def mock_playbyplay_v3(mocker):
+def mock_playbyplay_v3(request, mocker):
     """Mock PlayByPlayV3 API call for play-by-play data."""
+    if _is_e2e(request):
+        return
     mock_df = pd.DataFrame(
         {
             "gameId": ["0022301148"] * 5,
@@ -767,8 +814,10 @@ def mock_playbyplay_v3(mocker):
 
 
 @pytest.fixture(autouse=True)
-def mock_league_dash_team_stats(mocker):
+def mock_league_dash_team_stats(request, mocker):
     """Mock LeagueDashTeamStats API call for league team stats."""
+    if _is_e2e(request):
+        return
     mock_df = pd.DataFrame(
         {
             "TEAM_ID": [1610612749, 1610612738, 1610612747],
@@ -811,8 +860,10 @@ def mock_league_dash_team_stats(mocker):
 
 
 @pytest.fixture(autouse=True)
-def mock_live_scoreboard(mocker):
+def mock_live_scoreboard(request, mocker):
     """Mock live scoreboard API call for get_live_games."""
+    if _is_e2e(request):
+        return
     mock_data = {
         "scoreboard": {
             "games": [
