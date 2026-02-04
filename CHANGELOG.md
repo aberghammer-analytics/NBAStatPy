@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/aberghammer-analytics/NBAStatPy/compare/nbastatpy-v0.5.0...nbastatpy-v0.5.1) (2026-02-04)
+
+
+### Bug Fixes
+
+* update dependencies and CI for security hardening ([#20](https://github.com/aberghammer-analytics/NBAStatPy/issues/20)) ([2a99dac](https://github.com/aberghammer-analytics/NBAStatPy/commit/2a99dac1fc9084a190d9265edb55f2fbc6d1c343))
+
 ## [0.5.0](https://github.com/aberghammer-analytics/NBAStatPy/compare/nbastatpy-v0.4.1...nbastatpy-v0.5.0) (2026-01-23)
 
 
