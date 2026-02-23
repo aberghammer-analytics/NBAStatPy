@@ -5,7 +5,7 @@ description = "An easy-to-use wrapper for nba_api to easily find data for a play
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "fastmcp>=2,<3",
+    "fastmcp>=2,<4",
     "loguru>=0.7.3",
     "nba-api>=1.6.1",
     "pandas>=2.2.3",
