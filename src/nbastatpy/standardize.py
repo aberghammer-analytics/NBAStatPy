@@ -255,9 +255,11 @@ class PlayerDataStandardizer(DataStandardizer):
             else:
                 # Ensure existing season_id is in correct format
                 self.df["season_id"] = self.df["season_id"].apply(
-                    lambda x: Formatter.format_season_id(x)
-                    if pd.notna(x)
-                    else season_id_value
+                    lambda x: (
+                        Formatter.format_season_id(x)
+                        if pd.notna(x)
+                        else season_id_value
+                    )
                 )
 
 
@@ -441,9 +443,11 @@ class GameDataStandardizer(DataStandardizer):
             else:
                 # Ensure existing season_id is in correct format
                 self.df["season_id"] = self.df["season_id"].apply(
-                    lambda x: Formatter.format_season_id(x)
-                    if pd.notna(x)
-                    else season_id_value
+                    lambda x: (
+                        Formatter.format_season_id(x)
+                        if pd.notna(x)
+                        else season_id_value
+                    )
                 )
 
 
@@ -495,9 +499,11 @@ class LeagueDataStandardizer(DataStandardizer):
             else:
                 # Ensure existing season_id is in correct format
                 self.df["season_id"] = self.df["season_id"].apply(
-                    lambda x: Formatter.format_season_id(x)
-                    if pd.notna(x)
-                    else season_id_value
+                    lambda x: (
+                        Formatter.format_season_id(x)
+                        if pd.notna(x)
+                        else season_id_value
+                    )
                 )
 
     def add_playoff_flag(self) -> None:
